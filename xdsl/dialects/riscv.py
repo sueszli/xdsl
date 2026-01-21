@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from collections.abc import Set as AbstractSet
 from io import StringIO
-from typing import IO, Annotated, Generic, Literal, TypeAlias, cast
+from typing import IO, Annotated, ClassVar, Generic, Literal, TypeAlias, cast
 
 from typing_extensions import Self, TypeVar
 
@@ -38,12 +38,17 @@ from xdsl.ir import (
     Data,
     Dialect,
     Operation,
+    OpResult,
     Region,
     SSAValue,
 )
 from xdsl.irdl import (
+    AnyInt,
+    IntVarConstraint,
     IRDLOperation,
     ParsePropInAttrDict,
+    RangeOf,
+    VarOpResult,
     attr_def,
     base,
     irdl_attr_definition,
@@ -545,7 +550,7 @@ class RdRsRsOperation(
     This is called R-Type in the RISC-V specification.
     """
 
-    rd = result_def(RDInvT)
+    rd: OpResult[RDInvT] = result_def(RDInvT)
     rs1 = operand_def(RS1InvT)
     rs2 = operand_def(RS2InvT)
 
@@ -1605,9 +1610,12 @@ class SlliOp(RdRsImmShiftOperation):
 class SrliOpHasCanonicalizationPatternsTrait(HasCanonicalizationPatternsTrait):
     @classmethod
     def get_canonicalization_patterns(cls) -> tuple[RewritePattern, ...]:
-        from xdsl.transforms.canonicalization_patterns.riscv import ShiftRightbyZero
+        from xdsl.transforms.canonicalization_patterns.riscv import (
+            ShiftRightbyZero,
+            ShiftRightImmediate,
+        )
 
-        return (ShiftRightbyZero(),)
+        return (ShiftRightbyZero(), ShiftRightImmediate())
 
 
 @irdl_op_definition
@@ -3906,10 +3914,14 @@ class GetFloatRegisterOp(GetAnyRegisterOperation[FloatRegisterType]):
 
 
 @irdl_op_definition
-class ParallelMovOp(IRDLOperation):
+class ParallelMovOp(RISCVRegallocOperation):
+    _L: ClassVar = IntVarConstraint("L", AnyInt())
+
     name = "riscv.parallel_mov"
-    inputs = var_operand_def(RISCVRegisterType)
-    outputs = var_result_def(RISCVRegisterType)
+    inputs = var_operand_def(RangeOf(RISCVRegisterType).of_length(_L))
+    outputs: VarOpResult[RISCVRegisterType] = var_result_def(
+        RangeOf(RISCVRegisterType).of_length(_L)
+    )
     free_registers = opt_prop_def(ArrayAttr[RISCVRegisterType])
 
     assembly_format = "$inputs attr-dict `:` functional-type($inputs, $outputs)"
@@ -3928,12 +3940,6 @@ class ParallelMovOp(IRDLOperation):
         )
 
     def verify_(self) -> None:
-        if len(self.inputs) != len(self.outputs):
-            raise VerifyException(
-                "Input count must match output count. "
-                f"Num inputs: {len(self.inputs)}, Num outputs: {len(self.outputs)}"
-            )
-
         input_types = cast(Sequence[RISCVRegisterType], self.inputs.types)
         output_types = cast(Sequence[RISCVRegisterType], self.outputs.types)
 
