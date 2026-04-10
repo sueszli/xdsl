@@ -614,6 +614,14 @@ def test_select_op():
     assert op.res.type == builtin.i32
 
 
+def test_br_op():
+    dest = Block(arg_types=[builtin.i32])
+    arg = create_ssa_value(builtin.i32)
+    op = llvm.BrOp(dest, arg)
+    assert op.successor is dest
+    assert op.arguments == (arg,)
+
+
 def test_cond_br_op():
     cond = create_ssa_value(builtin.i1)
     then_block = Block()

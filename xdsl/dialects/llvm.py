@@ -2385,6 +2385,22 @@ class SelectOp(IRDLOperation):
 
 
 @irdl_op_definition
+class BrOp(IRDLOperation):
+    name = "llvm.br"
+
+    arguments = var_operand_def()
+
+    successor = successor_def()
+
+    traits = traits_def(IsTerminator())
+
+    assembly_format = "$successor (`(` $arguments^ `:` type($arguments) `)`)? attr-dict"
+
+    def __init__(self, dest: Block, *ops: Operation | SSAValue):
+        super().__init__(operands=[[op for op in ops]], successors=[dest])
+
+
+@irdl_op_definition
 class CondBrOp(IRDLOperation):
     name = "llvm.cond_br"
 
@@ -2437,6 +2453,7 @@ LLVM = Dialect(
         AllocaOp,
         AndOp,
         BitcastOp,
+        BrOp,
         CallIntrinsicOp,
         CallOp,
         CondBrOp,
