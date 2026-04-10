@@ -13,6 +13,15 @@
 %fabs_vec = llvm.intr.fabs(%vec_f32) : (vector<4xf32>) -> vector<4xf32>
 // CHECK-NEXT: %fabs_vec = llvm.intr.fabs(%vec_f32) : (vector<4xf32>) -> vector<4xf32>
 
+%fsqrt_f32 = llvm.intr.sqrt(%f32) : (f32) -> f32
+// CHECK: %fsqrt_f32 = llvm.intr.sqrt(%f32) : (f32) -> f32
+
+%fsqrt_f64 = llvm.intr.sqrt(%f64) : (f64) -> f64
+// CHECK-NEXT: %fsqrt_f64 = llvm.intr.sqrt(%f64) : (f64) -> f64
+
+%fsqrt_vec = llvm.intr.sqrt(%vec_f32) : (vector<4xf32>) -> vector<4xf32>
+// CHECK-NEXT: %fsqrt_vec = llvm.intr.sqrt(%vec_f32) : (vector<4xf32>) -> vector<4xf32>
+
 %fneg_f32 = llvm.fneg %f32 : f32
 // CHECK: %fneg_f32 = llvm.fneg %f32 : f32
 

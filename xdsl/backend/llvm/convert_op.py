@@ -164,13 +164,20 @@ def _convert_fcmp(
     val_map[op.results[0]] = fn(cmpop, val_map[op.lhs], val_map[op.rhs])
 
 
-def _convert_fabs(
-    op: llvm.FAbsOp, builder: ir.IRBuilder, val_map: dict[SSAValue, ir.Value]
+_UNARY_INTRINSIC_MAP: dict[type[Operation], str] = {
+    llvm.FAbsOp: "llvm.fabs",
+    llvm.FSqrtOp: "llvm.sqrt",
+}
+
+
+def _convert_unary_intrinsic(
+    op: Operation, builder: ir.IRBuilder, val_map: dict[SSAValue, ir.Value]
 ):
-    operand = val_map[op.input]
+    operand = val_map[op.operands[0]]
     fn_type = ir.FunctionType(operand.type, [operand.type])
-    intrinsic = builder.module.declare_intrinsic("llvm.fabs", fnty=fn_type)
-    val_map[op.result] = builder.call(intrinsic, [operand])
+    intrinsic_name = _UNARY_INTRINSIC_MAP[type(op)]
+    intrinsic = builder.module.declare_intrinsic(intrinsic_name, fnty=fn_type)
+    val_map[op.results[0]] = builder.call(intrinsic, [operand])
 
 
 def _convert_fneg(
@@ -347,8 +354,8 @@ def convert_op(
             _convert_fcmp(op, builder, val_map)
         case op if type(op) in _CAST_OP_NAMES:
             _convert_cast(op, builder, val_map)
-        case llvm.FAbsOp():
-            _convert_fabs(op, builder, val_map)
+        case op if type(op) in _UNARY_INTRINSIC_MAP:
+            _convert_unary_intrinsic(op, builder, val_map)
         case llvm.FNegOp():
             _convert_fneg(op, builder, val_map)
         case llvm.CallOp():
