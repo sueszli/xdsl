@@ -13,6 +13,15 @@
 %fabs_vec = llvm.intr.fabs(%vec_f32) : (vector<4xf32>) -> vector<4xf32>
 // CHECK-NEXT: %fabs_vec = llvm.intr.fabs(%vec_f32) : (vector<4xf32>) -> vector<4xf32>
 
+%flog_f32 = llvm.intr.log(%f32) : (f32) -> f32
+// CHECK: %flog_f32 = llvm.intr.log(%f32) : (f32) -> f32
+
+%flog_f64 = llvm.intr.log(%f64) : (f64) -> f64
+// CHECK-NEXT: %flog_f64 = llvm.intr.log(%f64) : (f64) -> f64
+
+%flog_vec = llvm.intr.log(%vec_f32) : (vector<4xf32>) -> vector<4xf32>
+// CHECK-NEXT: %flog_vec = llvm.intr.log(%vec_f32) : (vector<4xf32>) -> vector<4xf32>
+
 %fneg_f32 = llvm.fneg %f32 : f32
 // CHECK: %fneg_f32 = llvm.fneg %f32 : f32
 
