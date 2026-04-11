@@ -170,6 +170,11 @@ _UNARY_INTRINSIC_MAP: dict[type[Operation], str] = {
 }
 
 
+_BINARY_INTRINSIC_MAP: dict[type[Operation], str] = {
+    llvm.VectorFMaxOp: "llvm.maxnum",
+}
+
+
 def _convert_unary_intrinsic(
     op: Operation, builder: ir.IRBuilder, val_map: dict[SSAValue, ir.Value]
 ):
@@ -178,6 +183,17 @@ def _convert_unary_intrinsic(
     intrinsic_name = _UNARY_INTRINSIC_MAP[type(op)]
     intrinsic = builder.module.declare_intrinsic(intrinsic_name, fnty=fn_type)
     val_map[op.results[0]] = builder.call(intrinsic, [operand])
+
+
+def _convert_binary_intrinsic(
+    op: Operation, builder: ir.IRBuilder, val_map: dict[SSAValue, ir.Value]
+):
+    lhs = val_map[op.operands[0]]
+    rhs = val_map[op.operands[1]]
+    fn_type = ir.FunctionType(lhs.type, [lhs.type, rhs.type])
+    intrinsic_name = _BINARY_INTRINSIC_MAP[type(op)]
+    intrinsic = builder.module.declare_intrinsic(intrinsic_name, fnty=fn_type)
+    val_map[op.results[0]] = builder.call(intrinsic, [lhs, rhs])
 
 
 def _convert_fneg(
@@ -356,6 +372,8 @@ def convert_op(
             _convert_cast(op, builder, val_map)
         case op if type(op) in _UNARY_INTRINSIC_MAP:
             _convert_unary_intrinsic(op, builder, val_map)
+        case op if type(op) in _BINARY_INTRINSIC_MAP:
+            _convert_binary_intrinsic(op, builder, val_map)
         case llvm.FNegOp():
             _convert_fneg(op, builder, val_map)
         case llvm.CallOp():
