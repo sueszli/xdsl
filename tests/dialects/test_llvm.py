@@ -590,6 +590,8 @@ def test_fabs_op():
 def test_fsqrt_op():
     val = create_ssa_value(builtin.f32)
     op = llvm.FSqrtOp(val)
+    assert op.arg == val
+    assert op.res.type == builtin.f32
 
 
 def test_flog_op():
