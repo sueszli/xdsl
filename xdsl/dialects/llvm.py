@@ -2323,6 +2323,7 @@ class FSqrtOp(IRDLOperation):
         )
 
 
+@irdl_op_definition
 class FLogOp(IRDLOperation):
     T: ClassVar = VarConstraint("T", AnyFloatConstr | VectorType.constr(AnyFloatConstr))
 
