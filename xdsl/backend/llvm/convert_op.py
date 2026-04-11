@@ -167,6 +167,7 @@ def _convert_fcmp(
 _UNARY_INTRINSIC_MAP: dict[type[Operation], str] = {
     llvm.FAbsOp: "llvm.fabs",
     llvm.FSqrtOp: "llvm.sqrt",
+    llvm.FLogOp: "llvm.log",
 }
 
 
@@ -294,6 +295,23 @@ def _convert_select(
     val_map[op.res] = builder.select(val_map[op.cond], val_map[op.lhs], val_map[op.rhs])
 
 
+def _convert_br(
+    op: llvm.BrOp,
+    builder: ir.IRBuilder,
+    val_map: dict[SSAValue, ir.Value],
+    block_map: dict[Block, LLVMBlock],
+):
+    dest = op.successor
+    parent = op.parent_block()
+    assert parent is not None
+    current_block = block_map[parent]
+    for arg, val in zip(dest.args, op.arguments):
+        phi = val_map[arg]
+        assert isinstance(phi, PhiInstr)
+        phi.add_incoming(val_map[val], current_block)
+    builder.branch(block_map[dest])
+
+
 def _convert_condbr(
     op: llvm.CondBrOp,
     builder: ir.IRBuilder,
@@ -398,6 +416,8 @@ def convert_op(
             _convert_getelementptr(op, builder, val_map)
         case llvm.InlineAsmOp():
             _convert_inline_asm(op, builder, val_map)
+        case llvm.BrOp() if block_map is not None:
+            _convert_br(op, builder, val_map, block_map)
         case llvm.CondBrOp() if block_map is not None:
             _convert_condbr(op, builder, val_map, block_map)
         case llvm.UnreachableOp():

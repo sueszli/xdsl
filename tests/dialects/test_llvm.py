@@ -590,6 +590,11 @@ def test_fabs_op():
 def test_fsqrt_op():
     val = create_ssa_value(builtin.f32)
     op = llvm.FSqrtOp(val)
+
+
+def test_flog_op():
+    val = create_ssa_value(builtin.f32)
+    op = llvm.FLogOp(val)
     assert op.arg == val
     assert op.res.type == builtin.f32
 
@@ -619,6 +624,14 @@ def test_select_op():
     assert op.lhs == lhs
     assert op.rhs == rhs
     assert op.res.type == builtin.i32
+
+
+def test_br_op():
+    dest = Block(arg_types=[builtin.i32])
+    arg = create_ssa_value(builtin.i32)
+    op = llvm.BrOp(dest, arg)
+    assert op.successor is dest
+    assert op.arguments == (arg,)
 
 
 def test_vector_fmax_op():

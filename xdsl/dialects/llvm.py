@@ -2323,6 +2323,38 @@ class FSqrtOp(IRDLOperation):
         )
 
 
+class FLogOp(IRDLOperation):
+    T: ClassVar = VarConstraint("T", AnyFloatConstr | VectorType.constr(AnyFloatConstr))
+
+    name = "llvm.intr.log"
+
+    arg = operand_def(T)
+    res = result_def(T)
+
+    fastmathFlags = prop_def(FastMathAttr, default_value=FastMathAttr(None))
+
+    assembly_format = (
+        "`(` operands `)` attr-dict `:` functional-type(operands, results)"
+    )
+
+    irdl_options = (ParsePropInAttrDict(),)
+
+    traits = traits_def(Pure())
+
+    def __init__(
+        self,
+        arg: Operation | SSAValue,
+        fast_math: FastMathAttr | FastMathFlag | None = None,
+    ):
+        if isinstance(fast_math, FastMathFlag | str | None):
+            fast_math = FastMathAttr(fast_math)
+        super().__init__(
+            operands=[arg],
+            result_types=[SSAValue.get(arg).type],
+            properties={"fastmathFlags": fast_math},
+        )
+
+
 @irdl_op_definition
 class FNegOp(IRDLOperation):
     T: ClassVar = VarConstraint("T", AnyFloatConstr | VectorType.constr(AnyFloatConstr))
@@ -2418,6 +2450,22 @@ class SelectOp(IRDLOperation):
 
 
 @irdl_op_definition
+class BrOp(IRDLOperation):
+    name = "llvm.br"
+
+    arguments = var_operand_def()
+
+    successor = successor_def()
+
+    traits = traits_def(IsTerminator())
+
+    assembly_format = "$successor (`(` $arguments^ `:` type($arguments) `)`)? attr-dict"
+
+    def __init__(self, dest: Block, *ops: Operation | SSAValue):
+        super().__init__(operands=[[op for op in ops]], successors=[dest])
+
+
+@irdl_op_definition
 class CondBrOp(IRDLOperation):
     name = "llvm.cond_br"
 
@@ -2505,6 +2553,7 @@ LLVM = Dialect(
         AllocaOp,
         AndOp,
         BitcastOp,
+        BrOp,
         CallIntrinsicOp,
         CallOp,
         CondBrOp,
@@ -2514,6 +2563,7 @@ LLVM = Dialect(
         FAddOp,
         FCmpOp,
         FDivOp,
+        FLogOp,
         FMulOp,
         FNegOp,
         FPExtOp,
