@@ -621,6 +621,14 @@ def test_select_op():
     assert op.res.type == builtin.i32
 
 
+def test_br_op():
+    dest = Block(arg_types=[builtin.i32])
+    arg = create_ssa_value(builtin.i32)
+    op = llvm.BrOp(dest, arg)
+    assert op.successor is dest
+    assert op.arguments == (arg,)
+
+
 def test_vector_fmax_op():
     lhs = create_ssa_value(builtin.f32)
     rhs = create_ssa_value(builtin.f32)

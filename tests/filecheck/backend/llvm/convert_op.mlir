@@ -589,6 +589,35 @@ builtin.module {
   // CHECK-NEXT:   ret i32 {{%.+}}
   // CHECK-NEXT: }
 
+  llvm.func @br_op_no_args() {
+    llvm.br ^bb1
+  ^bb1:
+    llvm.return
+  }
+
+  // CHECK: define void @"br_op_no_args"()
+  // CHECK-NEXT: {
+  // CHECK-NEXT: [[BB0:.\d+]]:
+  // CHECK-NEXT:   br label %"[[BB1:.\d+]]"
+  // CHECK-NEXT: [[BB1]]:
+  // CHECK-NEXT:   ret void
+  // CHECK-NEXT: }
+
+  llvm.func @br_op(%arg0: i32) -> i32 {
+    llvm.br ^bb1(%arg0: i32)
+  ^bb1(%0: i32):
+    llvm.return %0 : i32
+  }
+
+  // CHECK: define i32 @"br_op"(i32 %".1")
+  // CHECK-NEXT: {
+  // CHECK-NEXT: [[BB0:.\d+]]:
+  // CHECK-NEXT:   br label %"[[BB1:.\d+]]"
+  // CHECK-NEXT: [[BB1]]:
+  // CHECK-NEXT:   %"[[V1:.\d+]]" = phi  i32 [%".1", %"[[BB0]]"]
+  // CHECK-NEXT:   ret i32 %"[[V1]]"
+  // CHECK-NEXT: }
+
   llvm.func @cond_br_op(%arg0: i1, %arg1: i32, %arg2: i32) -> i32 {
     llvm.cond_br %arg0, ^bb1(%arg1: i32), ^bb2(%arg2: i32)
   ^bb1(%0: i32):
