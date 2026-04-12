@@ -672,4 +672,28 @@ builtin.module {
   // CHECK-NEXT:   call void @"llvm.masked.store"(<4 x float> %".1", ptr %".2", i32 16, <4 x i1> %".3")
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
+
+  llvm.func @fma_op_f32(%arg0: vector<4xf32>, %arg1: vector<4xf32>, %arg2: vector<4xf32>) -> vector<4xf32> {
+    %0 = vector.fma %arg0, %arg1, %arg2 : vector<4xf32>
+    llvm.return %0 : vector<4xf32>
+  }
+
+  // CHECK: define <4 x float> @"fma_op_f32"(<4 x float> %".1", <4 x float> %".2", <4 x float> %".3")
+  // CHECK-NEXT: {
+  // CHECK-NEXT: [[ENTRY:.\d+]]:
+  // CHECK-NEXT:   %"[[RES:.\d+]]" = call <4 x float> @"llvm.fma.v4f32"(<4 x float> %".1", <4 x float> %".2", <4 x float> %".3")
+  // CHECK-NEXT:   ret <4 x float> %"[[RES]]"
+  // CHECK-NEXT: }
+
+  llvm.func @fma_op_f64(%arg0: vector<2xf64>, %arg1: vector<2xf64>, %arg2: vector<2xf64>) -> vector<2xf64> {
+    %0 = vector.fma %arg0, %arg1, %arg2 : vector<2xf64>
+    llvm.return %0 : vector<2xf64>
+  }
+
+  // CHECK: define <2 x double> @"fma_op_f64"(<2 x double> %".1", <2 x double> %".2", <2 x double> %".3")
+  // CHECK-NEXT: {
+  // CHECK-NEXT: [[ENTRY:.\d+]]:
+  // CHECK-NEXT:   %"[[RES:.\d+]]" = call <2 x double> @"llvm.fma.v2f64"(<2 x double> %".1", <2 x double> %".2", <2 x double> %".3")
+  // CHECK-NEXT:   ret <2 x double> %"[[RES]]"
+  // CHECK-NEXT: }
 }
