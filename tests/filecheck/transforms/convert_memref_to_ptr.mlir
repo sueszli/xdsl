@@ -125,6 +125,66 @@ memref.store %fv4, %mstr4[%idx4] {"nontemporal" = false} : memref<2xf32, strided
 
 // CHECK-NEXT:  "test.op"(%lv, %lv2, %flv, %flv2, %flv3, %subview1d, %subview2d, %cast_src, %reinterpret_dst_1) : (i32, i32, f64, f64, f64, memref<5xi32>, memref<5x4xi32>, memref<10xi32>, memref<5x4xindex, strided<[1, 1]>>) -> ()
 
+%idx_a1, %idx_a2, %arr_dyn1 = "test.op"() : () -> (index, index, memref<?x8xf32>)
+%lv_dyn1 = memref.load %arr_dyn1[%idx_a1, %idx_a2] {"nontemporal" = false} : memref<?x8xf32>
+
+// CHECK-NEXT:  %idx_a1, %idx_a2, %arr_dyn1 = "test.op"() : () -> (index, index, memref<?x8xf32>)
+// CHECK-NEXT:  %arr_dyn1_1 = ptr_xdsl.to_ptr %arr_dyn1 : memref<?x8xf32> -> !ptr_xdsl.ptr
+// CHECK-NEXT:  %pointer_dim_stride_4 = arith.constant 8 : index
+// CHECK-NEXT:  %pointer_dim_offset_2 = arith.muli %idx_a1, %pointer_dim_stride_4 : index
+// CHECK-NEXT:  %pointer_dim_stride_5 = arith.addi %pointer_dim_offset_2, %idx_a2 : index
+// CHECK-NEXT:  %bytes_per_element_10 = ptr_xdsl.type_offset f32 : index
+// CHECK-NEXT:  %scaled_pointer_offset_10 = arith.muli %pointer_dim_stride_5, %bytes_per_element_10 : index
+// CHECK-NEXT:  %offset_pointer_10 = ptr_xdsl.ptradd %arr_dyn1_1, %scaled_pointer_offset_10 : (!ptr_xdsl.ptr, index) -> !ptr_xdsl.ptr
+// CHECK-NEXT:  %lv_dyn1 = ptr_xdsl.load %offset_pointer_10 : !ptr_xdsl.ptr -> f32
+
+%idx_b1, %idx_b2, %arr_dyn2 = "test.op"() : () -> (index, index, memref<?x?xf32>)
+%lv_dyn2 = memref.load %arr_dyn2[%idx_b1, %idx_b2] {"nontemporal" = false} : memref<?x?xf32>
+
+// CHECK-NEXT:  %idx_b1, %idx_b2, %arr_dyn2 = "test.op"() : () -> (index, index, memref<?x?xf32>)
+// CHECK-NEXT:  %arr_dyn2_1 = ptr_xdsl.to_ptr %arr_dyn2 : memref<?x?xf32> -> !ptr_xdsl.ptr
+// CHECK-NEXT:  %dim_idx = arith.constant 1 : index
+// CHECK-NEXT:  %0 = memref.dim %arr_dyn2, %dim_idx : memref<?x?xf32>
+// CHECK-NEXT:  %pointer_dim_offset_3 = arith.muli %idx_b1, %0 : index
+// CHECK-NEXT:  %pointer_dim_stride_6 = arith.addi %pointer_dim_offset_3, %idx_b2 : index
+// CHECK-NEXT:  %bytes_per_element_11 = ptr_xdsl.type_offset f32 : index
+// CHECK-NEXT:  %scaled_pointer_offset_11 = arith.muli %pointer_dim_stride_6, %bytes_per_element_11 : index
+// CHECK-NEXT:  %offset_pointer_11 = ptr_xdsl.ptradd %arr_dyn2_1, %scaled_pointer_offset_11 : (!ptr_xdsl.ptr, index) -> !ptr_xdsl.ptr
+// CHECK-NEXT:  %lv_dyn2 = ptr_xdsl.load %offset_pointer_11 : !ptr_xdsl.ptr -> f32
+
+%sv, %sidx1, %sidx2, %sarr = "test.op"() : () -> (f32, index, index, memref<?x?xf32>)
+memref.store %sv, %sarr[%sidx1, %sidx2] {"nontemporal" = false} : memref<?x?xf32>
+
+// CHECK-NEXT:  %sv, %sidx1, %sidx2, %sarr = "test.op"() : () -> (f32, index, index, memref<?x?xf32>)
+// CHECK-NEXT:  %sarr_1 = ptr_xdsl.to_ptr %sarr : memref<?x?xf32> -> !ptr_xdsl.ptr
+// CHECK-NEXT:  %dim_idx_1 = arith.constant 1 : index
+// CHECK-NEXT:  %1 = memref.dim %sarr, %dim_idx_1 : memref<?x?xf32>
+// CHECK-NEXT:  %pointer_dim_offset_4 = arith.muli %sidx1, %1 : index
+// CHECK-NEXT:  %pointer_dim_stride_7 = arith.addi %pointer_dim_offset_4, %sidx2 : index
+// CHECK-NEXT:  %bytes_per_element_12 = ptr_xdsl.type_offset f32 : index
+// CHECK-NEXT:  %scaled_pointer_offset_12 = arith.muli %pointer_dim_stride_7, %bytes_per_element_12 : index
+// CHECK-NEXT:  %offset_pointer_12 = ptr_xdsl.ptradd %sarr_1, %scaled_pointer_offset_12 : (!ptr_xdsl.ptr, index) -> !ptr_xdsl.ptr
+// CHECK-NEXT:  ptr_xdsl.store %sv, %offset_pointer_12 : f32, !ptr_xdsl.ptr
+
+%off, %dyn_src = "test.op"() : () -> (index, memref<?x?xf32>)
+%subview_dyn = memref.subview %dyn_src[%off, 0][4, 8][1, 1] : memref<?x?xf32> to memref<4x8xf32, strided<[?, 1], offset: ?>>
+
+// CHECK-NEXT:  %off, %dyn_src = "test.op"() : () -> (index, memref<?x?xf32>)
+// CHECK-NEXT:  %dim_idx_2 = arith.constant 1 : index
+// CHECK-NEXT:  %2 = memref.dim %dyn_src, %dim_idx_2 : memref<?x?xf32>
+// CHECK-NEXT:  %dyn_src_1 = ptr_xdsl.to_ptr %dyn_src : memref<?x?xf32> -> !ptr_xdsl.ptr
+// CHECK-NEXT:  %increment_1 = arith.muli %2, %off : index
+// CHECK-NEXT:  %c0 = arith.constant 0 : index
+// CHECK-NEXT:  %subview_1 = arith.addi %increment_1, %c0 : index
+// CHECK-NEXT:  %bytes_per_element_13 = ptr_xdsl.type_offset f32 : index
+// CHECK-NEXT:  %scaled_pointer_offset_13 = arith.muli %subview_1, %bytes_per_element_13 : index
+// CHECK-NEXT:  %offset_pointer_13 = ptr_xdsl.ptradd %dyn_src_1, %scaled_pointer_offset_13 : (!ptr_xdsl.ptr, index) -> !ptr_xdsl.ptr
+// CHECK-NEXT:  %subview_dyn = ptr_xdsl.from_ptr %offset_pointer_13 : !ptr_xdsl.ptr -> memref<4x8xf32, strided<[?, 1], offset: ?>>
+
+"test.op"(%lv_dyn1, %lv_dyn2, %subview_dyn) : (f32, f32, memref<4x8xf32, strided<[?, 1], offset: ?>>) -> ()
+
+// CHECK-NEXT:  "test.op"(%lv_dyn1, %lv_dyn2, %subview_dyn) : (f32, f32, memref<4x8xf32, strided<[?, 1], offset: ?>>) -> ()
+
 // -----
 
 %fv, %idx, %mstr = "test.op"() : () -> (f64, index, memref<2xf64, strided<[?]>>)
