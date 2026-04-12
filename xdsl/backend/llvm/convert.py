@@ -13,12 +13,7 @@ from xdsl.utils.target import Target
 
 
 def _convert_func(op: llvm.FuncOp, llvm_module: ir.Module):
-    ret_type = convert_type(op.function_type.output)
-    arg_types = [convert_type(t) for t in op.function_type.inputs]
-    func_type = ir.FunctionType(ret_type, arg_types)
-    func_name = op.sym_name.data
-
-    func = ir.Function(llvm_module, func_type, name=func_name)
+    func = llvm_module.get_global(op.sym_name.data)
 
     if not op.body.blocks:
         return
@@ -55,20 +50,76 @@ def _convert_func(op: llvm.FuncOp, llvm_module: ir.Module):
             convert_op(op_in_block, builder, val_map, block_map)
 
 
-def convert_module(module: ModuleOp) -> ir.Module:
+def _declare_external_funcs(
+    func_ops: list[llvm.FuncOp], llvm_module: ir.Module
+) -> None:
+    # declare external functions referenced by call ops but not defined
+    defined_names = {op.sym_name.data for op in func_ops}
+    call_ops = (
+        op
+        for func_op in func_ops
+        for block in func_op.body.blocks
+        for op in block.ops
+        if isinstance(op, llvm.CallOp)
+    )
+    for call_op in call_ops:
+        if call_op.callee is None:
+            continue
+        name = call_op.callee.string_value()
+        if name in defined_names or name in llvm_module.globals:
+            continue
+        ret_type = (
+            convert_type(call_op.results[0].type) if call_op.results else ir.VoidType()
+        )
+        arg_types = [convert_type(a.type) for a in call_op.args]
+        ir.Function(
+            llvm_module,
+            ir.FunctionType(ret_type, arg_types),
+            name=name,
+        )
+
+
+def convert_module(
+    module: ModuleOp,
+    target_triple: str = "",
+    data_layout: str = "",
+    noalias_pointers: bool = False,
+) -> ir.Module:
     """
     Convert an xDSL module to an LLVM module.
     """
     llvm_module = ir.Module()
 
+    if target_triple:
+        llvm_module.triple = target_triple
+    if data_layout:
+        llvm_module.data_layout = data_layout
+
+    func_ops: list[llvm.FuncOp] = []
     for op in module.ops:
-        match op:
-            case llvm.FuncOp():
-                _convert_func(op, llvm_module)
-            case _:
-                raise NotImplementedError(
-                    f"Conversion not implemented for op: {op.name}"
-                )
+        if not isinstance(op, llvm.FuncOp):
+            raise NotImplementedError(f"Conversion not implemented for op: {op.name}")
+        func_ops.append(op)
+
+    # declare all functions (enables forward references)
+    for op in func_ops:
+        ret_type = convert_type(op.function_type.output)
+        arg_types = [convert_type(t) for t in op.function_type.inputs]
+        func_type = ir.FunctionType(ret_type, arg_types)
+        fn = ir.Function(llvm_module, func_type, name=op.sym_name.data)
+
+        if not noalias_pointers:
+            continue
+        for arg in fn.args:
+            if isinstance(arg.type, ir.PointerType):
+                arg.add_attribute("noalias")
+
+    _declare_external_funcs(func_ops, llvm_module)
+
+    # generate function bodies
+    for func_op in func_ops:
+        if func_op.body.blocks:
+            _convert_func(func_op, llvm_module)
 
     return llvm_module
 
