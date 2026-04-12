@@ -316,6 +316,12 @@ def _convert_return(
         builder.ret_void()
 
 
+def _convert_null(
+    op: llvm.NullOp, builder: ir.IRBuilder, val_map: dict[SSAValue, ir.Value]
+):
+    val_map[op.nullptr] = ir.Constant(convert_type(op.nullptr.type), None)
+
+
 def convert_op(
     op: Operation,
     builder: ir.IRBuilder,
@@ -383,5 +389,7 @@ def convert_op(
             _convert_masked_store(op, builder, val_map)
         case llvm.ReturnOp():
             _convert_return(op, builder, val_map)
+        case llvm.NullOp():
+            _convert_null(op, builder, val_map)
         case _:
             raise NotImplementedError(f"Conversion not implemented for op: {op.name}")

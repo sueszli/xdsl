@@ -672,4 +672,15 @@ builtin.module {
   // CHECK-NEXT:   call void @"llvm.masked.store"(<4 x float> %".1", ptr %".2", i32 16, <4 x i1> %".3")
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
+
+  llvm.func @null_op() -> !llvm.ptr {
+    %0 = "llvm.mlir.null"() : () -> !llvm.ptr
+    llvm.return %0 : !llvm.ptr
+  }
+
+  // CHECK: define ptr @"null_op"()
+  // CHECK-NEXT: {
+  // CHECK-NEXT: {{.[0-9]+}}:
+  // CHECK-NEXT:   ret ptr null
+  // CHECK-NEXT: }
 }
