@@ -385,6 +385,12 @@ def _convert_null(
     val_map[op.nullptr] = ir.Constant(convert_type(op.nullptr.type), None)
 
 
+def _convert_addressof(
+    op: llvm.AddressOfOp, builder: ir.IRBuilder, val_map: dict[SSAValue, ir.Value]
+):
+    val_map[op.result] = builder.module.get_global(op.global_name.root_reference.data)
+
+
 def convert_op(
     op: Operation,
     builder: ir.IRBuilder,
@@ -458,6 +464,8 @@ def convert_op(
             _convert_return(op, builder, val_map)
         case llvm.NullOp():
             _convert_null(op, builder, val_map)
+        case llvm.AddressOfOp():
+            _convert_addressof(op, builder, val_map)
         case FMAOp():
             _convert_fma(op, builder, val_map)
         case _:

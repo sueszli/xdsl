@@ -769,4 +769,23 @@ builtin.module {
   // CHECK-NEXT:   %"[[RES:.\d+]]" = call <2 x double> @"llvm.fma.v2f64"(<2 x double> %".1", <2 x double> %".2", <2 x double> %".3")
   // CHECK-NEXT:   ret <2 x double> %"[[RES]]"
   // CHECK-NEXT: }
+
+  llvm.func @callee(!llvm.ptr)
+
+  llvm.func @addressof_target() {
+    llvm.return
+  }
+
+  llvm.func @addressof_op() {
+    %0 = "llvm.mlir.addressof"() <{global_name = @addressof_target}> : () -> !llvm.ptr
+    "llvm.call"(%0) <{callee = @callee, fastmathFlags = #llvm.fastmath<>, CConv = #llvm.cconv<ccc>, TailCallKind = #llvm.tailcallkind<none>, operandSegmentSizes = array<i32: 1, 0>}> : (!llvm.ptr) -> ()
+    llvm.return
+  }
+
+  // CHECK: define void @"addressof_op"()
+  // CHECK-NEXT: {
+  // CHECK-NEXT: [[ENTRY:.\d+]]:
+  // CHECK-NEXT:   call ccc void @"callee"(void ()* @"addressof_target")
+  // CHECK-NEXT:   ret void
+  // CHECK-NEXT: }
 }
