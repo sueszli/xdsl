@@ -164,13 +164,37 @@ def _convert_fcmp(
     val_map[op.results[0]] = fn(cmpop, val_map[op.lhs], val_map[op.rhs])
 
 
-def _convert_fabs(
-    op: llvm.FAbsOp, builder: ir.IRBuilder, val_map: dict[SSAValue, ir.Value]
+_UNARY_INTRINSIC_MAP: dict[type[Operation], str] = {
+    llvm.FAbsOp: "llvm.fabs",
+    llvm.FSqrtOp: "llvm.sqrt",
+    llvm.FLogOp: "llvm.log",
+}
+
+
+_BINARY_INTRINSIC_MAP: dict[type[Operation], str] = {
+    llvm.VectorFMaxOp: "llvm.maxnum",
+}
+
+
+def _convert_unary_intrinsic(
+    op: Operation, builder: ir.IRBuilder, val_map: dict[SSAValue, ir.Value]
 ):
-    operand = val_map[op.input]
+    operand = val_map[op.operands[0]]
     fn_type = ir.FunctionType(operand.type, [operand.type])
-    intrinsic = builder.module.declare_intrinsic("llvm.fabs", fnty=fn_type)
-    val_map[op.result] = builder.call(intrinsic, [operand])
+    intrinsic_name = _UNARY_INTRINSIC_MAP[type(op)]
+    intrinsic = builder.module.declare_intrinsic(intrinsic_name, fnty=fn_type)
+    val_map[op.results[0]] = builder.call(intrinsic, [operand])
+
+
+def _convert_binary_intrinsic(
+    op: Operation, builder: ir.IRBuilder, val_map: dict[SSAValue, ir.Value]
+):
+    lhs = val_map[op.operands[0]]
+    rhs = val_map[op.operands[1]]
+    fn_type = ir.FunctionType(lhs.type, [lhs.type, rhs.type])
+    intrinsic_name = _BINARY_INTRINSIC_MAP[type(op)]
+    intrinsic = builder.module.declare_intrinsic(intrinsic_name, fnty=fn_type)
+    val_map[op.results[0]] = builder.call(intrinsic, [lhs, rhs])
 
 
 def _convert_fneg(
@@ -271,6 +295,23 @@ def _convert_select(
     val_map[op.res] = builder.select(val_map[op.cond], val_map[op.lhs], val_map[op.rhs])
 
 
+def _convert_br(
+    op: llvm.BrOp,
+    builder: ir.IRBuilder,
+    val_map: dict[SSAValue, ir.Value],
+    block_map: dict[Block, LLVMBlock],
+):
+    dest = op.successor
+    parent = op.parent_block()
+    assert parent is not None
+    current_block = block_map[parent]
+    for arg, val in zip(dest.args, op.arguments):
+        phi = val_map[arg]
+        assert isinstance(phi, PhiInstr)
+        phi.add_incoming(val_map[val], current_block)
+    builder.branch(block_map[dest])
+
+
 def _convert_condbr(
     op: llvm.CondBrOp,
     builder: ir.IRBuilder,
@@ -353,8 +394,10 @@ def convert_op(
             _convert_fcmp(op, builder, val_map)
         case op if type(op) in _CAST_OP_NAMES:
             _convert_cast(op, builder, val_map)
-        case llvm.FAbsOp():
-            _convert_fabs(op, builder, val_map)
+        case op if type(op) in _UNARY_INTRINSIC_MAP:
+            _convert_unary_intrinsic(op, builder, val_map)
+        case op if type(op) in _BINARY_INTRINSIC_MAP:
+            _convert_binary_intrinsic(op, builder, val_map)
         case llvm.FNegOp():
             _convert_fneg(op, builder, val_map)
         case llvm.CallOp():
@@ -379,6 +422,8 @@ def convert_op(
             _convert_getelementptr(op, builder, val_map)
         case llvm.InlineAsmOp():
             _convert_inline_asm(op, builder, val_map)
+        case llvm.BrOp() if block_map is not None:
+            _convert_br(op, builder, val_map, block_map)
         case llvm.CondBrOp() if block_map is not None:
             _convert_condbr(op, builder, val_map, block_map)
         case llvm.UnreachableOp():
