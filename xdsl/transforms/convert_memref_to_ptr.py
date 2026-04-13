@@ -17,7 +17,7 @@ On the other hand, operations that create views of memrefs from other memrefs mu
 to the relevant pointer arithmetic to encode the new inner buffer offset, when possible.
 """
 
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from functools import reduce
 from typing import cast
@@ -255,38 +255,6 @@ class ConvertLoadPattern(RewritePattern):
         rewriter.replace_op(op, ptr.LoadOp(target_ptr, memref_type.element_type))
 
 
-def _resolve_offset(
-    static_offset: int, dynamic_offsets: Iterator[SSAValue], builder: Builder
-) -> SSAValue:
-    # resolve subview offset: dynamic ssa value or materialized constant
-    if static_offset == builtin.DYNAMIC_INDEX:
-        return next(dynamic_offsets)
-    val = builder.insert_op(
-        arith.ConstantOp(builtin.IntegerAttr(static_offset, _index_type))
-    ).result
-    val.name_hint = f"c{static_offset}"
-    return val
-
-
-def _apply_subview_stride(
-    stride: int | SSAValue, offset_val: SSAValue, builder: Builder
-) -> SSAValue:
-    # compute stride * offset for a subview dimension
-    match stride:
-        case 1:
-            return offset_val
-        case int(val):
-            stride_val = builder.insert_op(
-                arith.ConstantOp(builtin.IntegerAttr(val, _index_type))
-            ).result
-            stride_val.name_hint = f"c{val}"
-            increment = builder.insert_op(arith.MuliOp(stride_val, offset_val)).result
-        case _:
-            increment = builder.insert_op(arith.MuliOp(stride, offset_val)).result
-    increment.name_hint = "increment"
-    return increment
-
-
 class ConvertSubviewPattern(RewritePattern):
     """
     Converts the subview to a pointer offset.
@@ -320,8 +288,31 @@ class ConvertSubviewPattern(RewritePattern):
         for stride, static_offset in zip(
             source_strides, op.static_offsets.iter_values(), strict=True
         ):
-            offset_val = _resolve_offset(static_offset, dynamic_offsets, rewriter)
-            increment = _apply_subview_stride(stride, offset_val, rewriter)
+            if static_offset == builtin.DYNAMIC_INDEX:
+                offset_val = next(dynamic_offsets)
+            else:
+                offset_val = rewriter.insert_op(
+                    arith.ConstantOp(builtin.IntegerAttr(static_offset, _index_type))
+                ).result
+                offset_val.name_hint = f"c{static_offset}"
+
+            match stride:
+                case 1:
+                    increment = offset_val
+                case int(val):
+                    stride_val = rewriter.insert_op(
+                        arith.ConstantOp(builtin.IntegerAttr(val, _index_type))
+                    ).result
+                    stride_val.name_hint = f"c{val}"
+                    increment = rewriter.insert_op(
+                        arith.MuliOp(stride_val, offset_val)
+                    ).result
+                    increment.name_hint = "increment"
+                case _:
+                    increment = rewriter.insert_op(
+                        arith.MuliOp(stride, offset_val)
+                    ).result
+                    increment.name_hint = "increment"
             if head is None:
                 head = increment
             else:
