@@ -128,4 +128,4 @@ def test_convert_module_external_function():
 
     ext_fn = llvm_module.get_global("external_fn")
     assert ext_fn is not None
-    assert len(ext_fn.basic_blocks) == 0
+    assert not ext_fn.basic_blocks
