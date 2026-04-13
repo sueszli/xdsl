@@ -107,8 +107,8 @@ def test_convert_module_forward_reference():
     callee_fn = llvm_module.get_global("callee")
     assert caller_fn is not None
     assert callee_fn is not None
-    assert len(caller_fn.basic_blocks) > 0
-    assert len(callee_fn.basic_blocks) > 0
+    assert caller_fn.basic_blocks
+    assert callee_fn.basic_blocks
 
 
 def test_convert_module_external_function():
