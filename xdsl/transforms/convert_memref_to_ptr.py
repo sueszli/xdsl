@@ -389,7 +389,7 @@ class ConvertReinterpretCastOp(RewritePattern):
         pointer.name_hint = op.source.name_hint
 
         # reinterpret_cast has exactly one flat element offset
-        static_offset = list(op.static_offsets.iter_values())[0]
+        static_offset = next(iter(op.static_offsets.iter_values()))
 
         # zero offset: no pointer arithmetic needed
         if static_offset == 0:
