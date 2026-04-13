@@ -49,7 +49,7 @@ def test_convert_module_declaration():
     llvm_module = convert_module(module)
     fn = llvm_module.get_global("my_decl")
     assert fn is not None
-    assert len(fn.basic_blocks) == 0
+    assert not fn.basic_blocks
 
 
 def test_convert_module_noalias_pointers():
