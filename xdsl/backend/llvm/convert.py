@@ -81,12 +81,19 @@ def _declare_external_funcs(
 
 def convert_module(
     module: ModuleOp,
+    target_triple: str = "",
+    data_layout: str = "",
     noalias_pointers: bool = False,
 ) -> ir.Module:
     """
     Convert an xDSL module to an LLVM module.
     """
     llvm_module = ir.Module()
+
+    if target_triple:
+        llvm_module.triple = target_triple
+    if data_layout:
+        llvm_module.data_layout = data_layout
 
     func_ops: list[llvm.FuncOp] = []
     for op in module.ops:
