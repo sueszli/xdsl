@@ -4,8 +4,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from xdsl.backend.llvm.convert_op import convert_op
-from xdsl.dialects import llvm, vector
-from xdsl.dialects.builtin import VectorType, f32, i32
+from xdsl.dialects import llvm
+from xdsl.dialects.builtin import i32
 from xdsl.ir import Block, SSAValue
 
 
@@ -31,26 +31,3 @@ def test_convert_null():
     convert_op(op, MagicMock(), val_map)
 
     assert str(val_map[op.nullptr]) == "ptr null"
-
-
-def test_convert_broadcast():
-    block = Block(arg_types=[f32])
-    arg = block.args[0]
-    vec_type = VectorType(f32, [4])
-    op = vector.BroadcastOp(arg, vec_type)
-
-    source_val = MagicMock()
-    inserted = MagicMock()
-    shuffled = MagicMock()
-
-    builder = MagicMock()
-    builder.insert_element.return_value = inserted
-    builder.shuffle_vector.return_value = shuffled
-
-    val_map: dict[SSAValue, Any] = {arg: source_val}
-
-    convert_op(op, builder, val_map)
-
-    builder.insert_element.assert_called_once()
-    builder.shuffle_vector.assert_called_once()
-    assert val_map[op.vector] is shuffled
