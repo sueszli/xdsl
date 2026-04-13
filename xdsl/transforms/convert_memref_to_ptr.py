@@ -391,25 +391,21 @@ class ConvertReinterpretCastOp(RewritePattern):
         # reinterpret_cast has exactly one flat element offset
         static_offset = next(iter(op.static_offsets.iter_values()))
 
-        # zero offset: no pointer arithmetic needed
-        if static_offset == 0:
-            rewriter.replace_op(op, ptr.FromPtrOp(pointer, op.result.type))
-            return
+        if static_offset != 0:
+            # dynamic offset: passed as operand
+            if static_offset == builtin.DYNAMIC_INDEX:
+                offset_val = op.offsets[0]
+            # static non-zero offset: materialize as constant
+            else:
+                offset_val = rewriter.insert_op(
+                    arith.ConstantOp(builtin.IntegerAttr(static_offset, _index_type))
+                ).result
+                offset_val.name_hint = f"c{static_offset}"
 
-        # dynamic offset: passed as operand
-        if static_offset == builtin.DYNAMIC_INDEX:
-            offset_val = op.offsets[0]
-        # static non-zero offset: materialize as constant
-        else:
-            offset_val = rewriter.insert_op(
-                arith.ConstantOp(builtin.IntegerAttr(static_offset, _index_type))
-            ).result
-            offset_val.name_hint = f"c{static_offset}"
-
-        # scale element offset to bytes and advance pointer
-        element_type = op.result.type.element_type
-        byte_offset = get_bytes_offset(offset_val, element_type, rewriter)
-        pointer = get_offset_pointer(pointer, byte_offset, rewriter)
+            # scale element offset to bytes and advance pointer
+            element_type = op.result.type.element_type
+            byte_offset = get_bytes_offset(offset_val, element_type, rewriter)
+            pointer = get_offset_pointer(pointer, byte_offset, rewriter)
         rewriter.replace_op(op, ptr.FromPtrOp(pointer, op.result.type))
 
 
