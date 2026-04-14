@@ -9,6 +9,7 @@ from llvmlite.ir.values import Value
 
 from xdsl.backend.llvm.convert_type import convert_type
 from xdsl.dialects import llvm
+from xdsl.dialects.vector import FMAOp
 from xdsl.ir import Block, Operation, SSAValue
 
 _BINARY_OP_MAP: dict[
@@ -348,6 +349,27 @@ def _convert_masked_store(
     builder.call(intrinsic, [value, ptr, alignment, mask])
 
 
+def _convert_fma(
+    op: FMAOp,
+    builder: ir.IRBuilder,
+    val_map: dict[SSAValue, ir.Value],
+):
+    lhs = val_map[op.lhs]
+    rhs = val_map[op.rhs]
+    acc = val_map[op.acc]
+    res_type = convert_type(op.res.type)
+    assert isinstance(res_type, ir.VectorType)
+    assert isinstance(res_type.element, (ir.HalfType, ir.FloatType, ir.DoubleType))
+    # declare_intrinsic doesn't support VectorType, build name manually
+    name = f"llvm.fma.v{res_type.count}{res_type.element.intrinsic_name}"
+    fn_type = ir.FunctionType(res_type, [res_type, res_type, res_type])
+    try:
+        intrinsic = builder.module.get_global(name)
+    except KeyError:
+        intrinsic = ir.Function(builder.module, fn_type, name=name)
+    val_map[op.res] = builder.call(intrinsic, [lhs, rhs, acc])
+
+
 def _convert_return(
     op: Operation, builder: ir.IRBuilder, val_map: dict[SSAValue, ir.Value]
 ):
@@ -436,5 +458,7 @@ def convert_op(
             _convert_return(op, builder, val_map)
         case llvm.NullOp():
             _convert_null(op, builder, val_map)
+        case FMAOp():
+            _convert_fma(op, builder, val_map)
         case _:
             raise NotImplementedError(f"Conversion not implemented for op: {op.name}")
