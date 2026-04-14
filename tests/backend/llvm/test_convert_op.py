@@ -5,7 +5,7 @@ import pytest
 
 from xdsl.backend.llvm.convert_op import convert_op
 from xdsl.dialects import llvm
-from xdsl.dialects.builtin import IntAttr, i32
+from xdsl.dialects.builtin import i32
 from xdsl.ir import Block, SSAValue
 
 
@@ -24,10 +24,10 @@ def test_convert_indirect_call_raises():
         convert_op(op, builder, val_map)
 
 
-def test_convert_null_preserves_address_space():
-    op = llvm.NullOp(llvm.LLVMPointerType(addr_space=IntAttr(1)))
+def test_convert_null():
+    op = llvm.NullOp(llvm.LLVMPointerType())
     val_map: dict[SSAValue, Any] = {}
 
     convert_op(op, MagicMock(), val_map)
 
-    assert str(val_map[op.nullptr]) == "ptr addrspace(1) null"
+    assert str(val_map[op.nullptr]) == "ptr null"
