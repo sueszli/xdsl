@@ -695,6 +695,35 @@ builtin.module {
   // CHECK-NEXT:   ret float %"[[RES]]"
   // CHECK-NEXT: }
 
+  // forward_ref_caller calls forward_ref_callee which is defined AFTER it
+  llvm.func @forward_ref_caller(%arg0: i32) -> i32 {
+    %0 = "llvm.call"(%arg0) <{
+      callee = @forward_ref_callee,
+      fastmathFlags = #llvm.fastmath<none>,
+      CConv = #llvm.cconv<ccc>,
+      TailCallKind = #llvm.tailcallkind<none>,
+      operandSegmentSizes = array<i32: 1, 0>
+    }> : (i32) -> i32
+    llvm.return %0 : i32
+  }
+
+  // CHECK: define i32 @"forward_ref_caller"(i32 %".1")
+  // CHECK-NEXT: {
+  // CHECK-NEXT: [[ENTRY:.\d+]]:
+  // CHECK-NEXT:   %"[[RES:.\d+]]" = call ccc i32 @"forward_ref_callee"(i32 %".1")
+  // CHECK-NEXT:   ret i32 %"[[RES]]"
+  // CHECK-NEXT: }
+
+  llvm.func @forward_ref_callee(%arg0: i32) -> i32 {
+    llvm.return %arg0 : i32
+  }
+
+  // CHECK: define i32 @"forward_ref_callee"(i32 %".1")
+  // CHECK-NEXT: {
+  // CHECK-NEXT: [[ENTRY:.\d+]]:
+  // CHECK-NEXT:   ret i32 %".1"
+  // CHECK-NEXT: }
+
   llvm.func @helper(%arg0: i32) -> i32 {
     llvm.return %arg0 : i32
   }
