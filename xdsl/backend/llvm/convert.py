@@ -50,35 +50,6 @@ def _convert_func(op: llvm.FuncOp, llvm_module: ir.Module):
             convert_op(op_in_block, builder, val_map, block_map)
 
 
-def _declare_external_funcs(
-    func_ops: list[llvm.FuncOp], llvm_module: ir.Module
-) -> None:
-    # Declare external functions referenced by call ops but not defined
-    defined_names = {op.sym_name.data for op in func_ops}
-    call_ops = (
-        op
-        for func_op in func_ops
-        for block in func_op.body.blocks
-        for op in block.ops
-        if isinstance(op, llvm.CallOp)
-    )
-    for call_op in call_ops:
-        if call_op.callee is None:
-            continue
-        name = call_op.callee.string_value()
-        if name in defined_names or name in llvm_module.globals:
-            continue
-        ret_type = (
-            convert_type(call_op.results[0].type) if call_op.results else ir.VoidType()
-        )
-        arg_types = [convert_type(a.type) for a in call_op.args]
-        ir.Function(
-            llvm_module,
-            ir.FunctionType(ret_type, arg_types),
-            name=name,
-        )
-
-
 def convert_module(
     module: ModuleOp,
     target_triple: str = "",
@@ -112,8 +83,6 @@ def convert_module(
         for arg in fn.args:
             if isinstance(arg.type, ir.PointerType):
                 arg.add_attribute("noalias")
-
-    _declare_external_funcs(func_ops, llvm_module)
 
     # Generate function bodies
     for func_op in func_ops:

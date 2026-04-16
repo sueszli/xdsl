@@ -112,17 +112,20 @@ def test_convert_module_forward_reference():
 
 
 def test_convert_module_external_function():
-    # call ops to undefined functions auto declare them
-    ft = llvm_dialect.LLVMFunctionType([i32], i32)
+    # caller references an externally declared (body-less) callee
+    ext_ft = llvm_dialect.LLVMFunctionType([i32], i32)
+    external = llvm_dialect.FuncOp("external_fn", ext_ft)
 
+    caller_ft = llvm_dialect.LLVMFunctionType([i32], i32)
     block = Block(arg_types=[i32])
     call_op = llvm_dialect.CallOp("external_fn", block.args[0], return_type=i32)
     block.add_op(call_op)
     ret_op = llvm_dialect.ReturnOp(call_op.returned)
     block.add_op(ret_op)
+    caller = llvm_dialect.FuncOp("my_func", caller_ft, body=Region(block))
 
-    func = llvm_dialect.FuncOp("my_func", ft, body=Region(block))
-    module = ModuleOp([func])
+    module = ModuleOp([caller, external])
+    module.verify()
 
     llvm_module = convert_module(module)
 
