@@ -103,7 +103,7 @@ _CAST_OP_NAMES: dict[type[Operation], str] = {
 
 
 class CastInstrWithFlags(instructions.CastInstr):
-    # workaround: llvmlite's CastInstr doesn't support flags like 'trunc nsw' or 'zext nneg'
+    # Workaround: llvmlite's CastInstr doesn't support flags like 'trunc nsw' or 'zext nneg'
     def __init__(
         self,
         parent: LLVMBlock,
@@ -360,7 +360,7 @@ def _convert_fma(
     res_type = convert_type(op.res.type)
     assert isinstance(res_type, ir.VectorType)
     assert isinstance(res_type.element, (ir.HalfType, ir.FloatType, ir.DoubleType))
-    # declare_intrinsic doesn't support VectorType, build name manually
+    # `declare_intrinsic` doesn't support VectorType, build name manually
     name = f"llvm.fma.v{res_type.count}{res_type.element.intrinsic_name}"
     fn_type = ir.FunctionType(res_type, [res_type, res_type, res_type])
     try:

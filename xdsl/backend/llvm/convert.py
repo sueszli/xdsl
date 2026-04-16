@@ -21,7 +21,7 @@ def _convert_func(op: llvm.FuncOp, llvm_module: ir.Module):
     block_map: dict[Block, ir.Block] = {}
     val_map: dict[SSAValue, ir.Value] = {}
 
-    # create all blocks first so that forward references work
+    # Create all blocks first so that forward references work
     for i, block in enumerate(op.body.blocks):
         llvm_block = func.append_basic_block(name=block.name_hint or "")
         block_map[block] = llvm_block
@@ -29,8 +29,8 @@ def _convert_func(op: llvm.FuncOp, llvm_module: ir.Module):
             for arg, llvm_arg in zip(block.args, func.args):
                 val_map[arg] = llvm_arg
 
-    # create PHI nodes for non-entry block arguments
-    # incoming values are added later by branch ops (e.g. BrOp, CondBrOp) in convert_op
+    # Create PHI nodes for non-entry block arguments
+    # Incoming values are added later by branch ops (e.g. BrOp, CondBrOp) in convert_op
     for i, block in enumerate(op.body.blocks):
         if i == 0:
             continue
@@ -40,10 +40,10 @@ def _convert_func(op: llvm.FuncOp, llvm_module: ir.Module):
                 phi = builder.phi(convert_type(arg.type))
                 val_map[arg] = phi
 
-    # convert ops in each block
+    # Convert ops in each block
     for block in op.body.blocks:
         builder = ir.IRBuilder(block_map[block])
-        # position after any PHI nodes
+        # Position after any PHI nodes
         if block_map[block].instructions:
             builder.position_after(block_map[block].instructions[-1])
         for op_in_block in block.ops:
@@ -53,7 +53,7 @@ def _convert_func(op: llvm.FuncOp, llvm_module: ir.Module):
 def _declare_external_funcs(
     func_ops: list[llvm.FuncOp], llvm_module: ir.Module
 ) -> None:
-    # declare external functions referenced by call ops but not defined
+    # Declare external functions referenced by call ops but not defined
     defined_names = {op.sym_name.data for op in func_ops}
     call_ops = (
         op
@@ -100,7 +100,7 @@ def convert_module(
             raise NotImplementedError(f"Conversion not implemented for op: {op.name}")
         func_ops.append(op)
 
-    # declare all functions (enables forward references)
+    # Declare all functions (enables forward references)
     for op in func_ops:
         ret_type = convert_type(op.function_type.output)
         arg_types = [convert_type(t) for t in op.function_type.inputs]
@@ -115,7 +115,7 @@ def convert_module(
 
     _declare_external_funcs(func_ops, llvm_module)
 
-    # generate function bodies
+    # Generate function bodies
     for func_op in func_ops:
         if func_op.body.blocks:
             _convert_func(func_op, llvm_module)
