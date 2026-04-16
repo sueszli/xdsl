@@ -80,6 +80,8 @@ from xdsl.traits import (
     Pure,
     SameOperandsAndResultType,
     SymbolOpInterface,
+    SymbolTable,
+    SymbolUserOpInterface,
 )
 from xdsl.utils.exceptions import VerifyException
 from xdsl.utils.hints import isa
@@ -1703,6 +1705,8 @@ class FuncOp(IRDLOperation):
     tune_cpu = opt_prop_def(StringAttr)
     unnamed_addr = opt_prop_def(IntegerAttr)
 
+    traits = traits_def(SymbolOpInterface())
+
     def __init__(
         self,
         sym_name: str | StringAttr,
@@ -1993,6 +1997,21 @@ class CallIntrinsicOp(IRDLOperation):
         )
 
 
+class CallOpSymbolUserOpInterface(SymbolUserOpInterface):
+    def verify(self, op: Operation) -> None:
+        assert isinstance(op, CallOp)
+
+        if op.callee is None:
+            return
+
+        found_callee = SymbolTable.lookup_symbol(op, op.callee)
+        if not found_callee:
+            raise VerifyException(f"'{op.callee}' could not be found in symbol table")
+
+        if not isinstance(found_callee, FuncOp):
+            raise VerifyException(f"'{op.callee}' does not reference a valid function")
+
+
 @irdl_op_definition
 class CallOp(IRDLOperation):
     name = "llvm.call"
@@ -2012,6 +2031,8 @@ class CallOp(IRDLOperation):
         TailCallKindAttr, default_value=TailCallKindAttr(TailCallKind.NONE)
     )
     returned = opt_result_def()
+
+    traits = traits_def(CallOpSymbolUserOpInterface())
 
     irdl_options = (AttrSizedOperandSegments(as_property=True),)
 

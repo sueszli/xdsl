@@ -557,6 +557,38 @@ def test_call_op_variadic():
     assert op.var_callee_type.is_variadic
 
 
+def test_call_op_symbol_verification_missing_callee():
+    ft = llvm.LLVMFunctionType([i32], i32)
+    caller_block = Block(arg_types=[i32])
+    call_op = llvm.CallOp("unknown_fn", caller_block.args[0], return_type=i32)
+    caller_block.add_op(call_op)
+    caller_block.add_op(llvm.ReturnOp(call_op.returned))
+    caller = llvm.FuncOp("caller", ft, body=Region(caller_block))
+    module = builtin.ModuleOp([caller])
+
+    with pytest.raises(
+        VerifyException, match="'@unknown_fn' could not be found in symbol table"
+    ):
+        module.verify()
+
+
+def test_call_op_symbol_verification_resolved_callee():
+    ft = llvm.LLVMFunctionType([i32], i32)
+
+    caller_block = Block(arg_types=[i32])
+    call_op = llvm.CallOp("callee", caller_block.args[0], return_type=i32)
+    caller_block.add_op(call_op)
+    caller_block.add_op(llvm.ReturnOp(call_op.returned))
+    caller = llvm.FuncOp("caller", ft, body=Region(caller_block))
+
+    callee_block = Block(arg_types=[i32])
+    callee_block.add_op(llvm.ReturnOp(callee_block.args[0]))
+    callee = llvm.FuncOp("callee", ft, body=Region(callee_block))
+
+    module = builtin.ModuleOp([caller, callee])
+    module.verify()
+
+
 def test_call_intrinsic_op_converts_str_to_stringattr():
     # verify string intrinsic name is auto-converted to StringAttr
     op = llvm.CallIntrinsicOp(
