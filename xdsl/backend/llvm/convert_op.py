@@ -164,6 +164,22 @@ def _convert_fcmp(
     val_map[op.results[0]] = fn(cmpop, val_map[op.lhs], val_map[op.rhs])
 
 
+_UNARY_INTRINSIC_MAP: dict[type[Operation], str] = {
+    llvm.FSinOp: "llvm.sin",
+}
+
+
+def _convert_unary_intrinsic(
+    op: Operation, builder: ir.IRBuilder, val_map: dict[SSAValue, ir.Value]
+):
+    operand = val_map[op.operands[0]]
+    fn_type = ir.FunctionType(operand.type, [operand.type])
+    intrinsic = builder.module.declare_intrinsic(
+        _UNARY_INTRINSIC_MAP[type(op)], fnty=fn_type
+    )
+    val_map[op.results[0]] = builder.call(intrinsic, [operand])
+
+
 def _convert_fabs(
     op: llvm.FAbsOp, builder: ir.IRBuilder, val_map: dict[SSAValue, ir.Value]
 ):
@@ -349,6 +365,8 @@ def convert_op(
             _convert_cast(op, builder, val_map)
         case llvm.FAbsOp():
             _convert_fabs(op, builder, val_map)
+        case op if type(op) in _UNARY_INTRINSIC_MAP:
+            _convert_unary_intrinsic(op, builder, val_map)
         case llvm.FNegOp():
             _convert_fneg(op, builder, val_map)
         case llvm.CallOp():
