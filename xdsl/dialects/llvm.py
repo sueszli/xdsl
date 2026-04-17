@@ -1998,6 +1998,14 @@ class CallIntrinsicOp(IRDLOperation):
 
 
 class CallOpSymbolUserOpInterface(SymbolUserOpInterface):
+    """
+    Verifies that a direct `llvm.call` resolves to an `llvm.func` in the enclosing
+    symbol table. Indirect calls (no `callee` symbol) are skipped.
+
+    Mirrors MLIR's `LLVM::CallOp::verifySymbolUses`:
+    https://github.com/llvm/llvm-project/blob/main/mlir/lib/Dialect/LLVMIR/IR/LLVMDialect.cpp
+    """
+
     def verify(self, op: Operation) -> None:
         assert isinstance(op, CallOp)
 
