@@ -35,7 +35,7 @@ from xdsl.pattern_rewriter import (
     op_type_rewrite_pattern,
 )
 from xdsl.rewriter import InsertPoint
-from xdsl.utils.exceptions import DiagnosticException, PassFailedException
+from xdsl.utils.exceptions import DiagnosticException
 from xdsl.utils.hints import isa
 
 _index_type = builtin.IndexType()
@@ -72,13 +72,26 @@ def get_offset_pointer(
     return target_ptr.result
 
 
-def get_constant_strides(memref_type: builtin.MemRefType) -> Sequence[int]:
+def get_strides(
+    memref_val: SSAValue,
+    memref_type: builtin.MemRefType,
+    builder: Builder,
+) -> Sequence[int]:
     """
-    If the memref has constant strides and offset, returns them, otherwise raises a
-    DiagnosticException.
+    Returns the per-dimension strides of `memref_val` as a sequence of `int`s when
+    they are all statically known, otherwise raises a `DiagnosticException`.
+
+    `memref_val` and `builder` are currently unused; they are accepted so that a
+    follow-up change can extend this helper to emit `memref.dim` ops for dynamic
+    dimensions without changing its call sites.
     """
+    del memref_val, builder
     match memref_type.layout:
         case builtin.NoneAttr():
+            if builtin.DYNAMIC_INDEX in memref_type.get_shape():
+                raise DiagnosticException(
+                    f"MemRef {memref_type} with dynamic shape is not yet implemented"
+                )
             strides = builtin.ShapedType.strides_for_shape(memref_type.get_shape())
         case builtin.StridedLayoutAttr():
             strides = memref_type.layout.get_strides()
@@ -149,7 +162,7 @@ def get_target_ptr(
     pointer = memref_ptr.res
     pointer.name_hint = target_memref.name_hint
 
-    strides = get_constant_strides(memref_type)
+    strides = get_strides(target_memref, memref_type, builder)
     head = get_strides_offset(indices, strides, builder)
 
     if head is not None:
@@ -204,13 +217,7 @@ class ConvertSubviewPattern(RewritePattern):
         result_type = op.result.type
         element_type = result_type.element_type
 
-        source_shape = source_type.get_shape()
-        if builtin.DYNAMIC_INDEX in source_shape:
-            raise PassFailedException(
-                f"Cannot lower memref subview of memref type with dynamic "
-                f"shape {source_type}."
-            )
-        source_strides = get_constant_strides(source_type)
+        source_strides = get_strides(op.source, source_type, rewriter)
 
         pointer = rewriter.insert_op(ptr.ToPtrOp(op.source)).res
         pointer.name_hint = op.source.name_hint
