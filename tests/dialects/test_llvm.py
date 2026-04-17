@@ -587,6 +587,13 @@ def test_fabs_op():
     assert op.result.type == builtin.f32
 
 
+def test_fceil_op():
+    val = create_ssa_value(builtin.f32)
+    op = llvm.FCeilOp(val)
+    assert op.arg == val
+    assert op.res.type == builtin.f32
+
+
 def test_fsqrt_op():
     val = create_ssa_value(builtin.f32)
     op = llvm.FSqrtOp(val)
