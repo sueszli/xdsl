@@ -671,6 +671,9 @@ builtin.module {
   // CHECK-NEXT: {
   // CHECK-NEXT: [[ENTRY:.\d+]]:
   // CHECK-NEXT:   %"[[RES:.\d+]]" = call float @"llvm.sqrt"(float %".1")
+  // CHECK-NEXT:   ret float %"[[RES]]"
+  // CHECK-NEXT: }
+
   llvm.func @flog_op(%arg0: f32) -> f32 {
     %0 = llvm.intr.log(%arg0) : (f32) -> f32
     llvm.return %0 : f32
@@ -680,6 +683,18 @@ builtin.module {
   // CHECK-NEXT: {
   // CHECK-NEXT: [[ENTRY:.\d+]]:
   // CHECK-NEXT:   %"[[RES:.\d+]]" = call float @"llvm.log"(float %".1")
+  // CHECK-NEXT:   ret float %"[[RES]]"
+  // CHECK-NEXT: }
+
+  llvm.func @fcos_op(%arg0: f32) -> f32 {
+    %0 = llvm.intr.cos(%arg0) : (f32) -> f32
+    llvm.return %0 : f32
+  }
+
+  // CHECK: define float @"fcos_op"(float %".1")
+  // CHECK-NEXT: {
+  // CHECK-NEXT: [[ENTRY:.\d+]]:
+  // CHECK-NEXT:   %"[[RES:.\d+]]" = call float @"llvm.cos"(float %".1")
   // CHECK-NEXT:   ret float %"[[RES]]"
   // CHECK-NEXT: }
 
