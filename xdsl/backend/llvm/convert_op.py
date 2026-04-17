@@ -9,7 +9,7 @@ from llvmlite.ir.values import Value
 
 from xdsl.backend.llvm.convert_type import convert_type
 from xdsl.dialects import llvm
-from xdsl.dialects.vector import FMAOp
+from xdsl.dialects.vector import CombiningKindFlag, FMAOp, ReductionOp
 from xdsl.ir import Block, Operation, SSAValue
 
 _BINARY_OP_MAP: dict[
@@ -349,6 +349,47 @@ def _convert_masked_store(
     builder.call(intrinsic, [value, ptr, alignment, mask])
 
 
+_REDUCTION_INTRINSIC: dict[CombiningKindFlag, tuple[str, float]] = {
+    CombiningKindFlag.ADD: ("llvm.vector.reduce.fadd", -0.0),
+    CombiningKindFlag.MUL: ("llvm.vector.reduce.fmul", 1.0),
+}
+
+
+def _convert_vector_reduction(
+    op: ReductionOp,
+    builder: ir.IRBuilder,
+    val_map: dict[SSAValue, ir.Value],
+):
+    kind = op.kind.data
+    if kind not in _REDUCTION_INTRINSIC:
+        raise NotImplementedError(
+            f"vector.reduction conversion not implemented for kind: {kind.value}"
+        )
+    intrinsic_prefix, identity = _REDUCTION_INTRINSIC[kind]
+
+    vector = val_map[op.vector]
+    vec_type = vector.type
+    assert isinstance(vec_type, ir.VectorType)
+    elt_type = vec_type.element
+    assert isinstance(elt_type, (ir.HalfType, ir.FloatType, ir.DoubleType))
+
+    if op.acc is not None:
+        start = val_map[op.acc]
+    else:
+        start = ir.Constant(elt_type, identity)
+
+    # declare_intrinsic doesn't support VectorType, build name manually
+    name = f"{intrinsic_prefix}.v{vec_type.count}{elt_type.intrinsic_name}"
+    fn_type = ir.FunctionType(elt_type, [elt_type, vec_type])
+    try:
+        intrinsic = builder.module.get_global(name)
+    except KeyError:
+        intrinsic = ir.Function(builder.module, fn_type, name=name)
+
+    flags = [f.value for f in op.fastmath.data]
+    val_map[op.dest] = builder.call(intrinsic, [start, vector], fastmath=flags)
+
+
 def _convert_fma(
     op: FMAOp,
     builder: ir.IRBuilder,
@@ -462,6 +503,8 @@ def convert_op(
             _convert_masked_store(op, builder, val_map)
         case llvm.ReturnOp():
             _convert_return(op, builder, val_map)
+        case ReductionOp():
+            _convert_vector_reduction(op, builder, val_map)
         case llvm.NullOp():
             _convert_null(op, builder, val_map)
         case llvm.AddressOfOp():
