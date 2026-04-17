@@ -13,6 +13,15 @@
 %2 = llvm.intr.fabs(%arg2) : (vector<4xf32>) -> vector<4xf32>
 // CHECK: llvm.intr.fabs([[arg2]]) : (vector<4xf32>) -> vector<4xf32>
 
+%exp2_f32 = llvm.intr.exp2(%arg0) : (f32) -> f32
+// CHECK: llvm.intr.exp2([[arg0]]) : (f32) -> f32
+
+%exp2_f64 = llvm.intr.exp2(%arg1) : (f64) -> f64
+// CHECK: llvm.intr.exp2([[arg1]]) : (f64) -> f64
+
+%exp2_vec = llvm.intr.exp2(%arg2) : (vector<4xf32>) -> vector<4xf32>
+// CHECK: llvm.intr.exp2([[arg2]]) : (vector<4xf32>) -> vector<4xf32>
+
 %3 = llvm.fneg %arg0 : f32
 // CHECK: llvm.fneg [[arg0]] : f32
 

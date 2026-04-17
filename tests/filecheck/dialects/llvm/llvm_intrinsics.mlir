@@ -21,6 +21,15 @@
 
 %fsqrt_vec = llvm.intr.sqrt(%vec_f32) : (vector<4xf32>) -> vector<4xf32>
 // CHECK-NEXT: %fsqrt_vec = llvm.intr.sqrt(%vec_f32) : (vector<4xf32>) -> vector<4xf32>
+%fexp2_f32 = llvm.intr.exp2(%f32) : (f32) -> f32
+// CHECK: %fexp2_f32 = llvm.intr.exp2(%f32) : (f32) -> f32
+
+%fexp2_f64 = llvm.intr.exp2(%f64) : (f64) -> f64
+// CHECK-NEXT: %fexp2_f64 = llvm.intr.exp2(%f64) : (f64) -> f64
+
+%fexp2_vec = llvm.intr.exp2(%vec_f32) : (vector<4xf32>) -> vector<4xf32>
+// CHECK-NEXT: %fexp2_vec = llvm.intr.exp2(%vec_f32) : (vector<4xf32>) -> vector<4xf32>
+
 %flog_f32 = llvm.intr.log(%f32) : (f32) -> f32
 // CHECK: %flog_f32 = llvm.intr.log(%f32) : (f32) -> f32
 

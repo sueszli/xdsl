@@ -167,6 +167,7 @@ def _convert_fcmp(
 
 _UNARY_INTRINSIC_MAP: dict[type[Operation], str] = {
     llvm.FAbsOp: "llvm.fabs",
+    llvm.FExp2Op: "llvm.exp2",
     llvm.FSqrtOp: "llvm.sqrt",
     llvm.FLogOp: "llvm.log",
 }
