@@ -167,6 +167,7 @@ def _convert_fcmp(
 
 _UNARY_INTRINSIC_MAP: dict[type[Operation], str] = {
     llvm.FAbsOp: "llvm.fabs",
+    llvm.FFloorOp: "llvm.floor",
     llvm.FSqrtOp: "llvm.sqrt",
     llvm.FLogOp: "llvm.log",
 }
@@ -196,7 +197,6 @@ def _convert_binary_intrinsic(
     intrinsic_name = _BINARY_INTRINSIC_MAP[type(op)]
     intrinsic = builder.module.declare_intrinsic(intrinsic_name, fnty=fn_type)
     val_map[op.results[0]] = builder.call(intrinsic, [lhs, rhs])
-
 
 def _convert_fneg(
     op: llvm.FNegOp, builder: ir.IRBuilder, val_map: dict[SSAValue, ir.Value]
