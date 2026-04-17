@@ -9,6 +9,7 @@ from llvmlite.ir.values import Value
 
 from xdsl.backend.llvm.convert_type import convert_type
 from xdsl.dialects import llvm
+from xdsl.dialects.vector import BitcastOp as VectorBitcastOp
 from xdsl.dialects.vector import FMAOp
 from xdsl.ir import Block, Operation, SSAValue
 
@@ -370,6 +371,16 @@ def _convert_fma(
     val_map[op.res] = builder.call(intrinsic, [lhs, rhs, acc])
 
 
+def _convert_vector_bitcast(
+    op: VectorBitcastOp,
+    builder: ir.IRBuilder,
+    val_map: dict[SSAValue, ir.Value],
+):
+    val_map[op.result] = builder.bitcast(
+        val_map[op.source], convert_type(op.result.type)
+    )
+
+
 def _convert_return(
     op: Operation, builder: ir.IRBuilder, val_map: dict[SSAValue, ir.Value]
 ):
@@ -468,5 +479,7 @@ def convert_op(
             _convert_addressof(op, builder, val_map)
         case FMAOp():
             _convert_fma(op, builder, val_map)
+        case VectorBitcastOp():
+            _convert_vector_bitcast(op, builder, val_map)
         case _:
             raise NotImplementedError(f"Conversion not implemented for op: {op.name}")
