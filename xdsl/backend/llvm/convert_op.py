@@ -11,12 +11,14 @@ from llvmlite.ir.values import Value
 from xdsl.backend.llvm.convert_type import convert_type
 from xdsl.dialects import llvm, vector
 from xdsl.dialects.builtin import (
+    AnyFloat,
     DenseIntOrFPElementsAttr,
     FloatAttr,
     IntegerAttr,
 )
 from xdsl.dialects.vector import FMAOp
 from xdsl.ir import Attribute, Block, Operation, SSAValue
+from xdsl.utils.type import get_element_type_or_self
 
 _BINARY_OP_MAP: dict[
     type[Operation], Callable[[ir.IRBuilder], Callable[[ir.Value, ir.Value], ir.Value]]
@@ -218,12 +220,18 @@ def _convert_call(
     if op.callee is None:
         raise NotImplementedError("Indirect calls not yet implemented")
     callee = builder.module.get_global(op.callee.string_value())
+    fastmath = (
+        [f.value for f in op.fastmathFlags.data]
+        if op.returned is not None
+        and isinstance(get_element_type_or_self(op.returned.type), AnyFloat)
+        else []
+    )
     instruction = builder.call(
         callee,
         args,
         cconv=op.CConv.cconv_name,
         tail=op.TailCallKind.data != "none",
-        fastmath=[f.value for f in op.fastmathFlags.data],
+        fastmath=fastmath,
     )
     if op.returned:
         val_map[op.returned] = instruction

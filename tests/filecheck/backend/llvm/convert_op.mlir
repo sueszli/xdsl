@@ -748,7 +748,7 @@ builtin.module {
   // CHECK: define i32 @"call_op"(i32 %".1")
   // CHECK-NEXT: {
   // CHECK-NEXT: [[ENTRY:.\d+]]:
-  // CHECK-NEXT:   %"[[RES:.\d+]]" = tail call ninf nnan fastcc i32 @"helper"(i32 %".1")
+  // CHECK-NEXT:   %"[[RES:.\d+]]" = tail call fastcc i32 @"helper"(i32 %".1")
   // CHECK-NEXT:   ret i32 %"[[RES]]"
   // CHECK-NEXT: }
 
