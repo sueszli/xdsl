@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import cast
 
 from llvmlite import ir
 from llvmlite.ir import instructions
@@ -9,8 +10,13 @@ from llvmlite.ir.values import Value
 
 from xdsl.backend.llvm.convert_type import convert_type
 from xdsl.dialects import llvm, vector
+from xdsl.dialects.builtin import (
+    DenseIntOrFPElementsAttr,
+    FloatAttr,
+    IntegerAttr,
+)
 from xdsl.dialects.vector import FMAOp
-from xdsl.ir import Block, Operation, SSAValue
+from xdsl.ir import Attribute, Block, Operation, SSAValue
 
 _BINARY_OP_MAP: dict[
     type[Operation], Callable[[ir.IRBuilder], Callable[[ir.Value, ir.Value], ir.Value]]
@@ -405,6 +411,28 @@ def _convert_broadcast(
     val_map[op.vector] = builder.shuffle_vector(inserted, undef, mask)
 
 
+_CONSTANT_VALUE_MAP: dict[type[Attribute], Callable[[Attribute], object]] = {
+    DenseIntOrFPElementsAttr: lambda v: list(
+        cast(DenseIntOrFPElementsAttr, v).iter_values()
+    ),
+    IntegerAttr: lambda v: cast(IntegerAttr, v).value.data,
+    FloatAttr: lambda v: cast(FloatAttr, v).value.data,
+}
+
+
+def _convert_constant(
+    op: llvm.ConstantOp, builder: ir.IRBuilder, val_map: dict[SSAValue, ir.Value]
+):
+    value = op.value
+    try:
+        handler = _CONSTANT_VALUE_MAP[type(value)]
+    except KeyError:
+        raise NotImplementedError(
+            f"Unsupported constant attribute type: {type(value)}"
+        ) from None
+    val_map[op.result] = ir.Constant(convert_type(op.result.type), handler(value))
+
+
 def convert_op(
     op: Operation,
     builder: ir.IRBuilder,
@@ -484,5 +512,7 @@ def convert_op(
             _convert_fma(op, builder, val_map)
         case vector.BroadcastOp():
             _convert_broadcast(op, builder, val_map)
+        case llvm.ConstantOp():
+            _convert_constant(op, builder, val_map)
         case _:
             raise NotImplementedError(f"Conversion not implemented for op: {op.name}")

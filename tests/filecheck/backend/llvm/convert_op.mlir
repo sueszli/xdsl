@@ -830,4 +830,37 @@ builtin.module {
   // CHECK-NEXT:   %"[[RES:.\d+]]" = shufflevector <4 x float> %"[[INS]]", <4 x float> <float undef, float undef, float undef, float undef>, <4 x i32> <i32 0, i32 0, i32 0, i32 0>
   // CHECK-NEXT:   ret <4 x float> %"[[RES]]"
   // CHECK-NEXT: }
+
+  llvm.func @constant_int() -> i32 {
+    %0 = llvm.mlir.constant(42 : i32) : i32
+    llvm.return %0 : i32
+  }
+
+  // CHECK: define i32 @"constant_int"()
+  // CHECK-NEXT: {
+  // CHECK-NEXT: {{.[0-9]+}}:
+  // CHECK-NEXT:   ret i32 42
+  // CHECK-NEXT: }
+
+  llvm.func @constant_float() -> f32 {
+    %0 = llvm.mlir.constant(3.14 : f32) : f32
+    llvm.return %0 : f32
+  }
+
+  // CHECK: define float @"constant_float"()
+  // CHECK-NEXT: {
+  // CHECK-NEXT: {{.[0-9]+}}:
+  // CHECK-NEXT:   ret float 0x40091eb860000000
+  // CHECK-NEXT: }
+
+  llvm.func @constant_dense_vector() -> vector<4xi32> {
+    %0 = llvm.mlir.constant(dense<[1, 2, 3, 4]> : vector<4xi32>) : vector<4xi32>
+    llvm.return %0 : vector<4xi32>
+  }
+
+  // CHECK: define <4 x i32> @"constant_dense_vector"()
+  // CHECK-NEXT: {
+  // CHECK-NEXT: {{.[0-9]+}}:
+  // CHECK-NEXT:   ret <4 x i32> <i32 1, i32 2, i32 3, i32 4>
+  // CHECK-NEXT: }
 }
