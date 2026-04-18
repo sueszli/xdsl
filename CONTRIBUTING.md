@@ -199,7 +199,8 @@ We aim to follow these rules for all changes in this repository:
   This separation makes the codebase more predictable and testable.
 
 - We access operation properties and attributes via the attribute shortcut
-  `op.someprop` rather than `op.properties["someprop"]` or `op.attributes["someprop"]`.
+  `op.someprop` rather than `op.properties["someprop"]` or `op.attributes["someprop"]`,
+  as the shortcut is concise and benefits from static type checking.
 
 - We fail fast by detecting unexpected conditions immediately and raising exceptions
   rather than corrupting state, as this makes debugging easier.
