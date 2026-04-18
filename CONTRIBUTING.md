@@ -198,8 +198,8 @@ We aim to follow these rules for all changes in this repository:
 - We centralize control flow in parent functions, keeping leaf functions as pure logic.
   This separation makes the codebase more predictable and testable.
 
-- We access operation properties via `op.properties["someprop"]` rather than the
-  attribute shortcut `op.someprop`, to keep the lookup explicit.
+- We access operation properties and attributes via the attribute shortcut
+  `op.someprop` rather than `op.properties["someprop"]` or `op.attributes["someprop"]`.
 
 - We fail fast by detecting unexpected conditions immediately and raising exceptions
   rather than corrupting state, as this makes debugging easier.
