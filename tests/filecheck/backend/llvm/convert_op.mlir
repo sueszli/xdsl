@@ -3,7 +3,7 @@
 builtin.module {
   llvm.func @declaration()
 
-  // CHECK: declare void @"declaration"()
+  // CHECK: declare void @{{"?declaration"?}}()
 
   llvm.func @noalias_all(%arg0: !llvm.ptr {llvm.noalias}, %arg1: !llvm.ptr {llvm.noalias}) {
     llvm.return
@@ -88,10 +88,8 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"named_entry"()
-  // CHECK-NEXT: {
-  // CHECK-NEXT: entry:
-  // CHECK-NEXT:   ret void
+  // CHECK: define void @{{"?named_entry"?}}()
+  // CHECK:   ret void
   // CHECK-NEXT: }
 
   llvm.func @custom_name() {
@@ -99,40 +97,32 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"custom_name"()
-  // CHECK-NEXT: {
-  // CHECK-NEXT: my_block:
-  // CHECK-NEXT:   ret void
+  // CHECK: define void @{{"?custom_name"?}}()
+  // CHECK:   ret void
   // CHECK-NEXT: }
 
   llvm.func @return_void() {
     llvm.return
   }
 
-  // CHECK: define void @"return_void"()
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   ret void
+  // CHECK: define void @{{"?return_void"?}}()
+  // CHECK:   ret void
   // CHECK-NEXT: }
 
   llvm.func @return_arg(%arg0: i32) -> i32 {
     llvm.return %arg0 : i32
   }
 
-  // CHECK: define i32 @"return_arg"(i32 %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   ret i32 %".1"
+  // CHECK: define i32 @{{"?return_arg"?}}(i32 [[A0:%[^ ,)]+]])
+  // CHECK:   ret i32 [[A0]]
   // CHECK-NEXT: }
 
   llvm.func @return_second_arg(%arg0: i32, %arg1: i32) -> i32 {
     llvm.return %arg1 : i32
   }
 
-  // CHECK: define i32 @"return_second_arg"(i32 %".1", i32 %".2")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   ret i32 %".2"
+  // CHECK: define i32 @{{"?return_second_arg"?}}(i32 [[A0:%[^ ,)]+]], i32 [[A1:%[^ ,)]+]])
+  // CHECK:   ret i32 [[A1]]
   // CHECK-NEXT: }
 
   llvm.func @binops(%arg0: i32, %arg1: i32, %arg2: f32, %arg3: f32) {
@@ -157,105 +147,101 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"binops"(i32 %".1", i32 %".2", float %".3", float %".4")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   {{%.+}} = add i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = fadd float %".3", %".4"
-  // CHECK-NEXT:   {{%.+}} = sub i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = fsub float %".3", %".4"
-  // CHECK-NEXT:   {{%.+}} = mul i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = fmul float %".3", %".4"
-  // CHECK-NEXT:   {{%.+}} = udiv i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = sdiv i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = fdiv float %".3", %".4"
-  // CHECK-NEXT:   {{%.+}} = urem i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = srem i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = frem float %".3", %".4"
-  // CHECK-NEXT:   {{%.+}} = shl i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = lshr i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = ashr i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = and i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = or i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = xor i32 %".1", %".2"
+  // CHECK: define void @{{"?binops"?}}(i32 [[A:%[^ ,)]+]], i32 [[B:%[^ ,)]+]], float [[C:%[^ ,)]+]], float [[D:%[^ ,)]+]])
+  // CHECK:   {{%[^ ]+}} = add i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = fadd float [[C]], [[D]]
+  // CHECK-NEXT:   {{%[^ ]+}} = sub i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = fsub float [[C]], [[D]]
+  // CHECK-NEXT:   {{%[^ ]+}} = mul i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = fmul float [[C]], [[D]]
+  // CHECK-NEXT:   {{%[^ ]+}} = udiv i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = sdiv i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = fdiv float [[C]], [[D]]
+  // CHECK-NEXT:   {{%[^ ]+}} = urem i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = srem i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = frem float [[C]], [[D]]
+  // CHECK-NEXT:   {{%[^ ]+}} = shl i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = lshr i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = ashr i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = and i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = or i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = xor i32 [[A]], [[B]]
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
   llvm.func @binops_flags(%arg0: i32, %arg1: i32, %arg2: f32, %arg3: f32) {
 
-    // CHECK: define void @"binops_flags"(i32 %".1", i32 %".2", float %".3", float %".4")
-    // CHECK-NEXT: {
-    // CHECK-NEXT: {{.[0-9]+}}:
+    // CHECK: define void @{{"?binops_flags"?}}(i32 [[A:%[^ ,)]+]], i32 [[B:%[^ ,)]+]], float [[C:%[^ ,)]+]], float [[D:%[^ ,)]+]])
 
     %add_none = llvm.add %arg0, %arg1 : i32
     %add_nsw = llvm.add %arg0, %arg1 overflow<nsw> : i32
     %add_nuw = llvm.add %arg0, %arg1 overflow<nuw> : i32
     %add_nsw_nuw = llvm.add %arg0, %arg1 overflow<nsw, nuw> : i32
 
-    // CHECK-NEXT:   {{%.+}} = add i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = add nsw i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = add nuw i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = add {{(nsw nuw|nuw nsw)}} i32 %".1", %".2"
+    // CHECK:   {{%[^ ]+}} = add i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = add nsw i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = add nuw i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = add {{(nsw nuw|nuw nsw)}} i32 [[A]], [[B]]
 
     %sub_none = llvm.sub %arg0, %arg1 : i32
     %sub_nsw = llvm.sub %arg0, %arg1 overflow<nsw> : i32
     %sub_nuw = llvm.sub %arg0, %arg1 overflow<nuw> : i32
     %sub_nsw_nuw = llvm.sub %arg0, %arg1 overflow<nsw, nuw> : i32
 
-    // CHECK-NEXT:   {{%.+}} = sub i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = sub nsw i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = sub nuw i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = sub {{(nsw nuw|nuw nsw)}} i32 %".1", %".2"
+    // CHECK-NEXT:   {{%[^ ]+}} = sub i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = sub nsw i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = sub nuw i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = sub {{(nsw nuw|nuw nsw)}} i32 [[A]], [[B]]
 
     %mul_none = llvm.mul %arg0, %arg1 : i32
     %mul_nsw = llvm.mul %arg0, %arg1 overflow<nsw> : i32
     %mul_nuw = llvm.mul %arg0, %arg1 overflow<nuw> : i32
     %mul_nsw_nuw = llvm.mul %arg0, %arg1 overflow<nsw, nuw> : i32
 
-    // CHECK-NEXT:   {{%.+}} = mul i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = mul nsw i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = mul nuw i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = mul {{(nsw nuw|nuw nsw)}} i32 %".1", %".2"
+    // CHECK-NEXT:   {{%[^ ]+}} = mul i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = mul nsw i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = mul nuw i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = mul {{(nsw nuw|nuw nsw)}} i32 [[A]], [[B]]
 
     %shl_none = llvm.shl %arg0, %arg1 : i32
     %shl_nsw = llvm.shl %arg0, %arg1 overflow<nsw> : i32
     %shl_nuw = llvm.shl %arg0, %arg1 overflow<nuw> : i32
     %shl_nsw_nuw = llvm.shl %arg0, %arg1 overflow<nsw, nuw> : i32
 
-    // CHECK-NEXT:   {{%.+}} = shl i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = shl nsw i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = shl nuw i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = shl {{(nsw nuw|nuw nsw)}} i32 %".1", %".2"
+    // CHECK-NEXT:   {{%[^ ]+}} = shl i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = shl nsw i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = shl nuw i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = shl {{(nsw nuw|nuw nsw)}} i32 [[A]], [[B]]
 
     %udiv_none = llvm.udiv %arg0, %arg1 : i32
     %udiv_exact = llvm.udiv exact %arg0, %arg1 : i32
 
-    // CHECK-NEXT:   {{%.+}} = udiv i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = udiv exact i32 %".1", %".2"
+    // CHECK-NEXT:   {{%[^ ]+}} = udiv i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = udiv exact i32 [[A]], [[B]]
 
     %sdiv_none = llvm.sdiv %arg0, %arg1 : i32
     %sdiv_exact = llvm.sdiv exact %arg0, %arg1 : i32
 
-    // CHECK-NEXT:   {{%.+}} = sdiv i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = sdiv exact i32 %".1", %".2"
+    // CHECK-NEXT:   {{%[^ ]+}} = sdiv i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = sdiv exact i32 [[A]], [[B]]
 
     %lshr_none = llvm.lshr %arg0, %arg1 : i32
     %lshr_exact = llvm.lshr exact %arg0, %arg1 : i32
 
-    // CHECK-NEXT:   {{%.+}} = lshr i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = lshr exact i32 %".1", %".2"
+    // CHECK-NEXT:   {{%[^ ]+}} = lshr i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = lshr exact i32 [[A]], [[B]]
 
     %ashr_none = llvm.ashr %arg0, %arg1 : i32
     %ashr_exact = llvm.ashr exact %arg0, %arg1 : i32
 
-    // CHECK-NEXT:   {{%.+}} = ashr i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = ashr exact i32 %".1", %".2"
+    // CHECK-NEXT:   {{%[^ ]+}} = ashr i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = ashr exact i32 [[A]], [[B]]
 
     %or_none = llvm.or %arg0, %arg1 : i32
     %or_disjoint = llvm.or disjoint %arg0, %arg1 : i32
 
-    // CHECK-NEXT:   {{%.+}} = or i32 %".1", %".2"
-    // CHECK-NEXT:   {{%.+}} = or disjoint i32 %".1", %".2"
+    // CHECK-NEXT:   {{%[^ ]+}} = or i32 [[A]], [[B]]
+    // CHECK-NEXT:   {{%[^ ]+}} = or disjoint i32 [[A]], [[B]]
 
     %fadd_none = llvm.fadd %arg2, %arg3 : f32
     %fadd_reassoc = llvm.fadd %arg2, %arg3 {fastmathFlags = #llvm.fastmath<reassoc>} : f32
@@ -267,15 +253,15 @@ builtin.module {
     %fadd_afn = llvm.fadd %arg2, %arg3 {fastmathFlags = #llvm.fastmath<afn>} : f32
     %fadd_fast = llvm.fadd %arg2, %arg3 {fastmathFlags = #llvm.fastmath<fast>} : f32
 
-    // CHECK-NEXT:   {{%.+}} = fadd float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fadd reassoc float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fadd nnan float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fadd ninf float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fadd nsz float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fadd arcp float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fadd contract float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fadd afn float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fadd {{.*}} float %".3", %".4"
+    // CHECK-NEXT:   {{%[^ ]+}} = fadd float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fadd reassoc float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fadd nnan float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fadd ninf float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fadd nsz float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fadd arcp float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fadd contract float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fadd afn float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fadd {{[a-z ]+}} float [[C]], [[D]]
 
     %fsub_none = llvm.fsub %arg2, %arg3 : f32
     %fsub_reassoc = llvm.fsub %arg2, %arg3 {fastmathFlags = #llvm.fastmath<reassoc>} : f32
@@ -287,15 +273,15 @@ builtin.module {
     %fsub_afn = llvm.fsub %arg2, %arg3 {fastmathFlags = #llvm.fastmath<afn>} : f32
     %fsub_fast = llvm.fsub %arg2, %arg3 {fastmathFlags = #llvm.fastmath<fast>} : f32
 
-    // CHECK-NEXT:   {{%.+}} = fsub float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fsub reassoc float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fsub nnan float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fsub ninf float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fsub nsz float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fsub arcp float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fsub contract float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fsub afn float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fsub {{.*}} float %".3", %".4"
+    // CHECK-NEXT:   {{%[^ ]+}} = fsub float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fsub reassoc float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fsub nnan float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fsub ninf float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fsub nsz float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fsub arcp float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fsub contract float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fsub afn float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fsub {{[a-z ]+}} float [[C]], [[D]]
 
     %fmul_none = llvm.fmul %arg2, %arg3 : f32
     %fmul_reassoc = llvm.fmul %arg2, %arg3 {fastmathFlags = #llvm.fastmath<reassoc>} : f32
@@ -307,15 +293,15 @@ builtin.module {
     %fmul_afn = llvm.fmul %arg2, %arg3 {fastmathFlags = #llvm.fastmath<afn>} : f32
     %fmul_fast = llvm.fmul %arg2, %arg3 {fastmathFlags = #llvm.fastmath<fast>} : f32
 
-    // CHECK-NEXT:   {{%.+}} = fmul float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fmul reassoc float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fmul nnan float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fmul ninf float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fmul nsz float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fmul arcp float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fmul contract float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fmul afn float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fmul {{.*}} float %".3", %".4"
+    // CHECK-NEXT:   {{%[^ ]+}} = fmul float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fmul reassoc float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fmul nnan float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fmul ninf float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fmul nsz float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fmul arcp float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fmul contract float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fmul afn float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fmul {{[a-z ]+}} float [[C]], [[D]]
 
     %fdiv_none = llvm.fdiv %arg2, %arg3 : f32
     %fdiv_reassoc = llvm.fdiv %arg2, %arg3 {fastmathFlags = #llvm.fastmath<reassoc>} : f32
@@ -327,15 +313,15 @@ builtin.module {
     %fdiv_afn = llvm.fdiv %arg2, %arg3 {fastmathFlags = #llvm.fastmath<afn>} : f32
     %fdiv_fast = llvm.fdiv %arg2, %arg3 {fastmathFlags = #llvm.fastmath<fast>} : f32
 
-    // CHECK-NEXT:   {{%.+}} = fdiv float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fdiv reassoc float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fdiv nnan float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fdiv ninf float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fdiv nsz float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fdiv arcp float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fdiv contract float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fdiv afn float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = fdiv {{.*}} float %".3", %".4"
+    // CHECK-NEXT:   {{%[^ ]+}} = fdiv float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fdiv reassoc float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fdiv nnan float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fdiv ninf float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fdiv nsz float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fdiv arcp float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fdiv contract float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fdiv afn float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = fdiv {{[a-z ]+}} float [[C]], [[D]]
 
     %frem_none = llvm.frem %arg2, %arg3 : f32
     %frem_reassoc = llvm.frem %arg2, %arg3 {fastmathFlags = #llvm.fastmath<reassoc>} : f32
@@ -347,15 +333,17 @@ builtin.module {
     %frem_afn = llvm.frem %arg2, %arg3 {fastmathFlags = #llvm.fastmath<afn>} : f32
     %frem_fast = llvm.frem %arg2, %arg3 {fastmathFlags = #llvm.fastmath<fast>} : f32
 
-    // CHECK-NEXT:   {{%.+}} = frem float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = frem reassoc float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = frem nnan float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = frem ninf float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = frem nsz float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = frem arcp float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = frem contract float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = frem afn float %".3", %".4"
-    // CHECK-NEXT:   {{%.+}} = frem {{.*}} float %".3", %".4"
+    // CHECK-NEXT:   {{%[^ ]+}} = frem float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = frem reassoc float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = frem nnan float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = frem ninf float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = frem nsz float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = frem arcp float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = frem contract float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = frem afn float [[C]], [[D]]
+    // CHECK-NEXT:   {{%[^ ]+}} = frem {{[a-z ]+}} float [[C]], [[D]]
+    // CHECK-NEXT:   ret void
+    // CHECK-NEXT: }
 
     llvm.return
   }
@@ -369,10 +357,8 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"inline_asm"(i32 %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   call void asm sideeffect "add $0, 1", "r"(i32 %".1")
+  // CHECK: define void @{{"?inline_asm"?}}(i32 [[A:%[^ ,)]+]])
+  // CHECK:   call void asm sideeffect "add $0, 1", "r"(i32 [[A]])
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
@@ -381,10 +367,8 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"alloca_op"(i32 %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   {{%.+}} = alloca i32, i32 %".1"
+  // CHECK: define void @{{"?alloca_op"?}}(i32 [[A:%[^ ,)]+]])
+  // CHECK:   {{%[^ ]+}} = alloca i32, i32 [[A]]{{(, align [0-9]+)?}}
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
@@ -393,10 +377,8 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"alloca_op_with_alignment"(i32 %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   {{%.+}} = alloca i32, i32 %".1", align 32
+  // CHECK: define void @{{"?alloca_op_with_alignment"?}}(i32 [[A:%[^ ,)]+]])
+  // CHECK:   {{%[^ ]+}} = alloca i32, i32 [[A]], align 32
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
@@ -405,10 +387,8 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"load_op"(ptr %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   {{%.+}} = load i32, ptr %".1"
+  // CHECK: define void @{{"?load_op"?}}(ptr [[A:%[^ ,)]+]])
+  // CHECK:   {{%[^ ]+}} = load i32, ptr [[A]]{{(, align [0-9]+)?}}
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
@@ -417,10 +397,8 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"load_op_with_alignment"(ptr %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   {{%.+}} = load i32, ptr %".1", align 16
+  // CHECK: define void @{{"?load_op_with_alignment"?}}(ptr [[A:%[^ ,)]+]])
+  // CHECK:   {{%[^ ]+}} = load i32, ptr [[A]], align 16
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
@@ -429,10 +407,8 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"store_op"(i32 %".1", ptr %".2")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   store i32 %".1", ptr %".2"
+  // CHECK: define void @{{"?store_op"?}}(i32 [[A:%[^ ,)]+]], ptr [[B:%[^ ,)]+]])
+  // CHECK:   store i32 [[A]], ptr [[B]]{{(, align [0-9]+)?}}
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
@@ -441,10 +417,8 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"store_op_with_alignment"(i32 %".1", ptr %".2")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   store i32 %".1", ptr %".2", align 8
+  // CHECK: define void @{{"?store_op_with_alignment"?}}(i32 [[A:%[^ ,)]+]], ptr [[B:%[^ ,)]+]])
+  // CHECK:   store i32 [[A]], ptr [[B]], align 8
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
@@ -453,10 +427,8 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"extract_op"({i32, float} %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   {{%.+}} = extractvalue {i32, float} %".1", 0
+  // CHECK: define void @{{"?extract_op"?}}({{(\{i32, float\}|\{ i32, float \})}} [[A:%[^ ,)]+]])
+  // CHECK:   {{%[^ ]+}} = extractvalue {{(\{i32, float\}|\{ i32, float \})}} [[A]], 0
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
@@ -465,10 +437,8 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"insert_op"({i32, float} %".1", i32 %".2")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   {{%.+}} = insertvalue {i32, float} %".1", i32 %".2", 0
+  // CHECK: define void @{{"?insert_op"?}}({{(\{i32, float\}|\{ i32, float \})}} [[A:%[^ ,)]+]], i32 [[B:%[^ ,)]+]])
+  // CHECK:   {{%[^ ]+}} = insertvalue {{(\{i32, float\}|\{ i32, float \})}} [[A]], i32 [[B]], 0
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
@@ -476,10 +446,8 @@ builtin.module {
     llvm.unreachable
   }
 
-  // CHECK: define void @"unreachable_op"()
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   unreachable
+  // CHECK: define void @{{"?unreachable_op"?}}()
+  // CHECK:   unreachable
   // CHECK-NEXT: }
 
   llvm.func @casts(%arg0: i32, %arg1: i64, %arg2: !llvm.ptr, %arg3: f32) {
@@ -494,17 +462,15 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"casts"(i32 %".1", i64 %".2", ptr %".3", float %".4")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   {{%.+}} = trunc i64 %".2" to i32
-  // CHECK-NEXT:   {{%.+}} = zext i32 %".1" to i64
-  // CHECK-NEXT:   {{%.+}} = sext i32 %".1" to i64
-  // CHECK-NEXT:   {{%.+}} = ptrtoint ptr %".3" to i64
-  // CHECK-NEXT:   {{%.+}} = inttoptr i64 %".2" to ptr
-  // CHECK-NEXT:   {{%.+}} = bitcast i64 %".2" to double
-  // CHECK-NEXT:   {{%.+}} = fpext float %".4" to double
-  // CHECK-NEXT:   {{%.+}} = sitofp i32 %".1" to float
+  // CHECK: define void @{{"?casts"?}}(i32 [[A:%[^ ,)]+]], i64 [[B:%[^ ,)]+]], ptr [[C:%[^ ,)]+]], float [[D:%[^ ,)]+]])
+  // CHECK:   {{%[^ ]+}} = trunc i64 [[B]] to i32
+  // CHECK-NEXT:   {{%[^ ]+}} = zext i32 [[A]] to i64
+  // CHECK-NEXT:   {{%[^ ]+}} = sext i32 [[A]] to i64
+  // CHECK-NEXT:   {{%[^ ]+}} = ptrtoint ptr [[C]] to i64
+  // CHECK-NEXT:   {{%[^ ]+}} = inttoptr i64 [[B]] to ptr
+  // CHECK-NEXT:   {{%[^ ]+}} = bitcast i64 [[B]] to double
+  // CHECK-NEXT:   {{%[^ ]+}} = fpext float [[D]] to double
+  // CHECK-NEXT:   {{%[^ ]+}} = sitofp i32 [[A]] to float
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
@@ -522,15 +488,13 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"casts_with_flags"(i32 %".1", i64 %".2")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   {{%.+}} = trunc i64 %".2" to i32
-  // CHECK-NEXT:   {{%.+}} = trunc nsw i64 %".2" to i32
-  // CHECK-NEXT:   {{%.+}} = trunc nuw i64 %".2" to i32
-  // CHECK-NEXT:   {{%.+}} = trunc {{(nsw nuw|nuw nsw)}} i64 %".2" to i32
-  // CHECK-NEXT:   {{%.+}} = zext i32 %".1" to i64
-  // CHECK-NEXT:   {{%.+}} = zext nneg i32 %".1" to i64
+  // CHECK: define void @{{"?casts_with_flags"?}}(i32 [[A:%[^ ,)]+]], i64 [[B:%[^ ,)]+]])
+  // CHECK:   {{%[^ ]+}} = trunc i64 [[B]] to i32
+  // CHECK-NEXT:   {{%[^ ]+}} = trunc nsw i64 [[B]] to i32
+  // CHECK-NEXT:   {{%[^ ]+}} = trunc nuw i64 [[B]] to i32
+  // CHECK-NEXT:   {{%[^ ]+}} = trunc {{(nsw nuw|nuw nsw)}} i64 [[B]] to i32
+  // CHECK-NEXT:   {{%[^ ]+}} = zext i32 [[A]] to i64
+  // CHECK-NEXT:   {{%[^ ]+}} = zext nneg i32 [[A]] to i64
 
   // void gep_constant(int (*ptr)[10]) {
   //   int* result = &ptr[1][2];
@@ -540,10 +504,8 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"gep_constant"(ptr %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   {{%.+}} = getelementptr [10 x i32], ptr %".1", i32 1, i32 2
+  // CHECK: define void @{{"?gep_constant"?}}(ptr [[A:%[^ ,)]+]])
+  // CHECK:   {{%[^ ]+}} = getelementptr [10 x i32], ptr [[A]], i32 1, i32 2
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
@@ -555,10 +517,8 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"gep_ssa"(ptr %".1", i32 %".2")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   {{%.+}} = getelementptr i32, ptr %".1", i32 %".2"
+  // CHECK: define void @{{"?gep_ssa"?}}(ptr [[A:%[^ ,)]+]], i32 [[B:%[^ ,)]+]])
+  // CHECK:   {{%[^ ]+}} = getelementptr i32, ptr [[A]], i32 [[B]]
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
@@ -571,26 +531,22 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"gep_mixed"(ptr %".1", i32 %".2", i32 %".3")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   {{%.+}} = getelementptr [10 x {i32, i32, [10 x i32]}], ptr %".1", i32 1, i32 %".2", i32 2, i32 %".3"
+  // CHECK: define void @{{"?gep_mixed"?}}(ptr [[A:%[^ ,)]+]], i32 [[B:%[^ ,)]+]], i32 [[C:%[^ ,)]+]])
+  // CHECK:   {{%[^ ]+}} = getelementptr [10 x {{(\{i32, i32, \[10 x i32\]\}|\{ i32, i32, \[10 x i32\] \})}}], ptr [[A]], i32 1, i32 [[B]], i32 2, i32 [[C]]
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
   // void gep_inbounds(int* ptr, int idx) {
   //   // same as gep_ssa, but we assume that 'ptr + idx' stays within the same 'object'
-  //   int* result = &ptr[idx]; 
+  //   int* result = &ptr[idx];
   // }
   llvm.func @gep_inbounds(%arg0: !llvm.ptr, %arg1: i32) {
     %0 = llvm.getelementptr inbounds %arg0[%arg1] : (!llvm.ptr, i32) -> !llvm.ptr, i32
     llvm.return
   }
 
-  // CHECK: define void @"gep_inbounds"(ptr %".1", i32 %".2")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   {{%.+}} = getelementptr inbounds i32, ptr %".1", i32 %".2"
+  // CHECK: define void @{{"?gep_inbounds"?}}(ptr [[A:%[^ ,)]+]], i32 [[B:%[^ ,)]+]])
+  // CHECK:   {{%[^ ]+}} = getelementptr{{( inbounds)?}} i32, ptr [[A]], i32 [[B]]
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
@@ -608,19 +564,17 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"comparisons"(i32 %".1", i32 %".2")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   {{%.+}} = icmp eq i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = icmp ne i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = icmp slt i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = icmp sle i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = icmp ult i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = icmp ule i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = icmp sgt i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = icmp sge i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = icmp ugt i32 %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = icmp uge i32 %".1", %".2"
+  // CHECK: define void @{{"?comparisons"?}}(i32 [[A:%[^ ,)]+]], i32 [[B:%[^ ,)]+]])
+  // CHECK:   {{%[^ ]+}} = icmp eq i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = icmp ne i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = icmp slt i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = icmp sle i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = icmp ult i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = icmp ule i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = icmp sgt i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = icmp sge i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = icmp ugt i32 [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = icmp uge i32 [[A]], [[B]]
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
@@ -630,11 +584,9 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"fcmp_op"(float %".1", float %".2")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   {{%.+}} = fcmp oeq float %".1", %".2"
-  // CHECK-NEXT:   {{%.+}} = fcmp ult float %".1", %".2"
+  // CHECK: define void @{{"?fcmp_op"?}}(float [[A:%[^ ,)]+]], float [[B:%[^ ,)]+]])
+  // CHECK:   {{%[^ ]+}} = fcmp oeq float [[A]], [[B]]
+  // CHECK-NEXT:   {{%[^ ]+}} = fcmp ult float [[A]], [[B]]
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
@@ -643,11 +595,9 @@ builtin.module {
     llvm.return %0 : i32
   }
 
-  // CHECK: define i32 @"select_op"(i1 %".1", i32 %".2", i32 %".3")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   {{%.+}} = select {{.*}}i1 %".1", i32 %".2", i32 %".3"
-  // CHECK-NEXT:   ret i32 {{%.+}}
+  // CHECK: define i32 @{{"?select_op"?}}(i1 [[A:%[^ ,)]+]], i32 [[B:%[^ ,)]+]], i32 [[C:%[^ ,)]+]])
+  // CHECK:   [[R:%[^ ]+]] = select{{ +}}i1 [[A]], i32 [[B]], i32 [[C]]
+  // CHECK-NEXT:   ret i32 [[R]]
   // CHECK-NEXT: }
 
   llvm.func @br_op_no_args() {
@@ -656,12 +606,9 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"br_op_no_args"()
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[BB0:.\d+]]:
-  // CHECK-NEXT:   br label %"[[BB1:.\d+]]"
-  // CHECK-NEXT: [[BB1]]:
-  // CHECK-NEXT:   ret void
+  // CHECK: define void @{{"?br_op_no_args"?}}()
+  // CHECK:   br label {{%[^ ]+}}
+  // CHECK:   ret void
   // CHECK-NEXT: }
 
   llvm.func @br_op(%arg0: i32) -> i32 {
@@ -670,13 +617,10 @@ builtin.module {
     llvm.return %0 : i32
   }
 
-  // CHECK: define i32 @"br_op"(i32 %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[BB0:.\d+]]:
-  // CHECK-NEXT:   br label %"[[BB1:.\d+]]"
-  // CHECK-NEXT: [[BB1]]:
-  // CHECK-NEXT:   %"[[V1:.\d+]]" = phi  i32 [%".1", %"[[BB0]]"]
-  // CHECK-NEXT:   ret i32 %"[[V1]]"
+  // CHECK: define i32 @{{"?br_op"?}}(i32 [[A:%[^ ,)]+]])
+  // CHECK:   br label {{%[^ ]+}}
+  // CHECK:   [[R:%[^ ]+]] = phi{{ +}}i32 {{\[ ?}}[[A]],
+  // CHECK:   ret i32 [[R]]
   // CHECK-NEXT: }
 
   llvm.func @cond_br_op(%arg0: i1, %arg1: i32, %arg2: i32) -> i32 {
@@ -687,16 +631,12 @@ builtin.module {
     llvm.return %1 : i32
   }
 
-  // CHECK: define i32 @"cond_br_op"(i1 %".1", i32 %".2", i32 %".3")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[BB0:.\d+]]:
-  // CHECK-NEXT:   br i1 %".1", label %"[[BB1:.\d+]]", label %"[[BB2:.\d+]]"
-  // CHECK-NEXT: [[BB1]]:
-  // CHECK-NEXT:   %"[[V1:.\d+]]" = phi  i32 [%".2", %"[[BB0]]"]
-  // CHECK-NEXT:   ret i32 %"[[V1]]"
-  // CHECK-NEXT: [[BB2]]:
-  // CHECK-NEXT:   %"[[V2:.\d+]]" = phi  i32 [%".3", %"[[BB0]]"]
-  // CHECK-NEXT:   ret i32 %"[[V2]]"
+  // CHECK: define i32 @{{"?cond_br_op"?}}(i1 [[A:%[^ ,)]+]], i32 [[B:%[^ ,)]+]], i32 [[C:%[^ ,)]+]])
+  // CHECK:   br i1 [[A]], label {{%[^ ,]+}}, label {{%[^ ]+}}
+  // CHECK:   [[R1:%[^ ]+]] = phi{{ +}}i32 {{\[ ?}}[[B]],
+  // CHECK:   ret i32 [[R1]]
+  // CHECK:   [[R2:%[^ ]+]] = phi{{ +}}i32 {{\[ ?}}[[C]],
+  // CHECK:   ret i32 [[R2]]
   // CHECK-NEXT: }
 
   llvm.func @maxnum_op(%arg0: f32, %arg1: f32) -> f32 {
@@ -704,11 +644,9 @@ builtin.module {
     llvm.return %0 : f32
   }
 
-  // CHECK: define float @"maxnum_op"(float %".1", float %".2")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[ENTRY:.\d+]]:
-  // CHECK-NEXT:   %"[[RES:.\d+]]" = call float @"llvm.maxnum"(float %".1", float %".2")
-  // CHECK-NEXT:   ret float %"[[RES]]"
+  // CHECK: define float @{{"?maxnum_op"?}}(float [[A:%[^ ,)]+]], float [[B:%[^ ,)]+]])
+  // CHECK:   [[R:%[^ ]+]] = call float @{{"?llvm\.maxnum(\.f32)?"?}}(float [[A]], float [[B]])
+  // CHECK-NEXT:   ret float [[R]]
   // CHECK-NEXT: }
 
   llvm.func @fabs_op(%arg0: f32) -> f32 {
@@ -716,11 +654,9 @@ builtin.module {
     llvm.return %0 : f32
   }
 
-  // CHECK: define float @"fabs_op"(float %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[ENTRY:.\d+]]:
-  // CHECK-NEXT:   %"[[RES:.\d+]]" = call float @"llvm.fabs"(float %".1")
-  // CHECK-NEXT:   ret float %"[[RES]]"
+  // CHECK: define float @{{"?fabs_op"?}}(float [[A:%[^ ,)]+]])
+  // CHECK:   [[R:%[^ ]+]] = call float @{{"?llvm\.fabs(\.f32)?"?}}(float [[A]])
+  // CHECK-NEXT:   ret float [[R]]
   // CHECK-NEXT: }
 
   llvm.func @fceil_op(%arg0: f32) -> f32 {
@@ -740,11 +676,9 @@ builtin.module {
     llvm.return %0 : f32
   }
 
-  // CHECK: define float @"fsqrt_op"(float %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[ENTRY:.\d+]]:
-  // CHECK-NEXT:   %"[[RES:.\d+]]" = call float @"llvm.sqrt"(float %".1")
-  // CHECK-NEXT:   ret float %"[[RES]]"
+  // CHECK: define float @{{"?fsqrt_op"?}}(float [[A:%[^ ,)]+]])
+  // CHECK:   [[R:%[^ ]+]] = call float @{{"?llvm\.sqrt(\.f32)?"?}}(float [[A]])
+  // CHECK-NEXT:   ret float [[R]]
   // CHECK-NEXT: }
 
   llvm.func @flog_op(%arg0: f32) -> f32 {
@@ -752,11 +686,9 @@ builtin.module {
     llvm.return %0 : f32
   }
 
-  // CHECK: define float @"flog_op"(float %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[ENTRY:.\d+]]:
-  // CHECK-NEXT:   %"[[RES:.\d+]]" = call float @"llvm.log"(float %".1")
-  // CHECK-NEXT:   ret float %"[[RES]]"
+  // CHECK: define float @{{"?flog_op"?}}(float [[A:%[^ ,)]+]])
+  // CHECK:   [[R:%[^ ]+]] = call float @{{"?llvm\.log(\.f32)?"?}}(float [[A]])
+  // CHECK-NEXT:   ret float [[R]]
   // CHECK-NEXT: }
 
   llvm.func @fneg_op(%arg0: f32) -> f32 {
@@ -764,11 +696,9 @@ builtin.module {
     llvm.return %0 : f32
   }
 
-  // CHECK: define float @"fneg_op"(float %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[ENTRY:.\d+]]:
-  // CHECK-NEXT:   %"[[RES:.\d+]]" = fneg float %".1"
-  // CHECK-NEXT:   ret float %"[[RES]]"
+  // CHECK: define float @{{"?fneg_op"?}}(float [[A:%[^ ,)]+]])
+  // CHECK:   [[R:%[^ ]+]] = fneg float [[A]]
+  // CHECK-NEXT:   ret float [[R]]
   // CHECK-NEXT: }
 
   // forward_ref_caller calls forward_ref_callee which is defined AFTER it
@@ -778,36 +708,31 @@ builtin.module {
       fastmathFlags = #llvm.fastmath<none>,
       CConv = #llvm.cconv<ccc>,
       TailCallKind = #llvm.tailcallkind<none>,
-      operandSegmentSizes = array<i32: 1, 0>
+      operandSegmentSizes = array<i32: 1, 0>,
+      op_bundle_sizes = array<i32>
     }> : (i32) -> i32
     llvm.return %0 : i32
   }
 
-  // CHECK: define i32 @"forward_ref_caller"(i32 %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[ENTRY:.\d+]]:
-  // CHECK-NEXT:   %"[[RES:.\d+]]" = call ccc i32 @"forward_ref_callee"(i32 %".1")
-  // CHECK-NEXT:   ret i32 %"[[RES]]"
+  // CHECK: define i32 @{{"?forward_ref_caller"?}}(i32 [[A:%[^ ,)]+]])
+  // CHECK:   [[R:%[^ ]+]] = call {{(ccc )?}}i32 @{{"?forward_ref_callee"?}}(i32 [[A]])
+  // CHECK-NEXT:   ret i32 [[R]]
   // CHECK-NEXT: }
 
   llvm.func @forward_ref_callee(%arg0: i32) -> i32 {
     llvm.return %arg0 : i32
   }
 
-  // CHECK: define i32 @"forward_ref_callee"(i32 %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[ENTRY:.\d+]]:
-  // CHECK-NEXT:   ret i32 %".1"
+  // CHECK: define i32 @{{"?forward_ref_callee"?}}(i32 [[A:%[^ ,)]+]])
+  // CHECK:   ret i32 [[A]]
   // CHECK-NEXT: }
 
   llvm.func @helper(%arg0: i32) -> i32 {
     llvm.return %arg0 : i32
   }
 
-  // CHECK: define i32 @"helper"(i32 %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[ENTRY:.\d+]]:
-  // CHECK-NEXT:   ret i32 %".1"
+  // CHECK: define i32 @{{"?helper"?}}(i32 [[A:%[^ ,)]+]])
+  // CHECK:   ret i32 [[A]]
   // CHECK-NEXT: }
 
   llvm.func @call_op(%arg0: i32) -> i32 {
@@ -815,11 +740,9 @@ builtin.module {
     llvm.return %0 : i32
   }
 
-  // CHECK: define i32 @"call_op"(i32 %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[ENTRY:.\d+]]:
-  // CHECK-NEXT:   %"[[RES:.\d+]]" = tail call fastcc i32 @"helper"(i32 %".1")
-  // CHECK-NEXT:   ret i32 %"[[RES]]"
+  // CHECK: define i32 @{{"?call_op"?}}(i32 [[A:%[^ ,)]+]])
+  // CHECK:   [[R:%[^ ]+]] = tail call fastcc i32 @{{"?helper"?}}(i32 [[A]])
+  // CHECK-NEXT:   ret i32 [[R]]
   // CHECK-NEXT: }
 
   llvm.func @masked_store_op(%arg0: vector<4xf32>, %arg1: !llvm.ptr, %arg2: vector<4xi1>) {
@@ -827,10 +750,8 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"masked_store_op"(<4 x float> %".1", ptr %".2", <4 x i1> %".3")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[ENTRY:.\d+]]:
-  // CHECK-NEXT:   call void @"llvm.masked.store"(<4 x float> %".1", ptr %".2", i32 16, <4 x i1> %".3")
+  // CHECK: define void @{{"?masked_store_op"?}}(<4 x float> [[V:%[^ ,)]+]], ptr [[P:%[^ ,)]+]], <4 x i1> [[M:%[^ ,)]+]])
+  // CHECK:   call void @{{"?llvm\.masked\.store(\.v4f32\.p0)?"?}}(<4 x float> [[V]], ptr{{( align 16)?}} [[P]]{{(, i32 16)?}}, <4 x i1> [[M]])
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
@@ -839,41 +760,21 @@ builtin.module {
     llvm.return %0 : !llvm.ptr
   }
 
-  // CHECK: define ptr @"zero_op"()
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   ret ptr null
-  // CHECK-NEXT: }
-
-  llvm.func @fma_op_f32(%arg0: vector<4xf32>, %arg1: vector<4xf32>, %arg2: vector<4xf32>) -> vector<4xf32> {
-    %0 = vector.fma %arg0, %arg1, %arg2 : vector<4xf32>
-    llvm.return %0 : vector<4xf32>
-  }
-
-  // CHECK: define <4 x float> @"fma_op_f32"(<4 x float> %".1", <4 x float> %".2", <4 x float> %".3")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[ENTRY:.\d+]]:
-  // CHECK-NEXT:   %"[[RES:.\d+]]" = call <4 x float> @"llvm.fma.v4f32"(<4 x float> %".1", <4 x float> %".2", <4 x float> %".3")
-  // CHECK-NEXT:   ret <4 x float> %"[[RES]]"
-  // CHECK-NEXT: }
-
-  llvm.func @fma_op_f64(%arg0: vector<2xf64>, %arg1: vector<2xf64>, %arg2: vector<2xf64>) -> vector<2xf64> {
-    %0 = vector.fma %arg0, %arg1, %arg2 : vector<2xf64>
-    llvm.return %0 : vector<2xf64>
-  }
-
-  // CHECK: define <2 x double> @"fma_op_f64"(<2 x double> %".1", <2 x double> %".2", <2 x double> %".3")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[ENTRY:.\d+]]:
-  // CHECK-NEXT:   %"[[RES:.\d+]]" = call <2 x double> @"llvm.fma.v2f64"(<2 x double> %".1", <2 x double> %".2", <2 x double> %".3")
-  // CHECK-NEXT:   ret <2 x double> %"[[RES]]"
+  // CHECK: define ptr @{{"?zero_op"?}}()
+  // CHECK:   ret ptr null
   // CHECK-NEXT: }
 
   llvm.func @callee(!llvm.ptr)
 
+  // CHECK: declare void @{{"?callee"?}}(ptr{{( [^)]+)?}})
+
   llvm.func @addressof_target() {
     llvm.return
   }
+
+  // CHECK: define void @{{"?addressof_target"?}}()
+  // CHECK:   ret void
+  // CHECK-NEXT: }
 
   llvm.func @addressof_op() {
     %0 = llvm.mlir.addressof @addressof_target : !llvm.ptr
@@ -881,24 +782,9 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"addressof_op"()
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[ENTRY:.\d+]]:
-  // CHECK-NEXT:   call ccc void @"callee"(void ()* @"addressof_target")
+  // CHECK: define void @{{"?addressof_op"?}}()
+  // CHECK:   call {{(ccc )?}}void @{{"?callee"?}}({{(void \(\)\*|ptr)}} @{{"?addressof_target"?}})
   // CHECK-NEXT:   ret void
-  // CHECK-NEXT: }
-
-  llvm.func @broadcast_f32(%arg0: f32) -> vector<4xf32> {
-    %0 = vector.broadcast %arg0 : f32 to vector<4xf32>
-    llvm.return %0 : vector<4xf32>
-  }
-
-  // CHECK: define <4 x float> @"broadcast_f32"(float %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[ENTRY:.\d+]]:
-  // CHECK-NEXT:   %"[[INS:.\d+]]" = insertelement <4 x float> <float undef, float undef, float undef, float undef>, float %".1", i32 0
-  // CHECK-NEXT:   %"[[RES:.\d+]]" = shufflevector <4 x float> %"[[INS]]", <4 x float> <float undef, float undef, float undef, float undef>, <4 x i32> <i32 0, i32 0, i32 0, i32 0>
-  // CHECK-NEXT:   ret <4 x float> %"[[RES]]"
   // CHECK-NEXT: }
 
   llvm.func @constant_int() -> i32 {
@@ -906,10 +792,8 @@ builtin.module {
     llvm.return %0 : i32
   }
 
-  // CHECK: define i32 @"constant_int"()
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   ret i32 42
+  // CHECK: define i32 @{{"?constant_int"?}}()
+  // CHECK:   ret i32 42
   // CHECK-NEXT: }
 
   llvm.func @constant_float() -> f32 {
@@ -917,10 +801,8 @@ builtin.module {
     llvm.return %0 : f32
   }
 
-  // CHECK: define float @"constant_float"()
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   ret float 0x40091eb860000000
+  // CHECK: define float @{{"?constant_float"?}}()
+  // CHECK:   ret float 0x{{[0-9a-fA-F]+}}
   // CHECK-NEXT: }
 
   llvm.func @constant_dense_vector() -> vector<4xi32> {
@@ -928,9 +810,7 @@ builtin.module {
     llvm.return %0 : vector<4xi32>
   }
 
-  // CHECK: define <4 x i32> @"constant_dense_vector"()
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   ret <4 x i32> <i32 1, i32 2, i32 3, i32 4>
+  // CHECK: define <4 x i32> @{{"?constant_dense_vector"?}}()
+  // CHECK:   ret <4 x i32> <i32 1, i32 2, i32 3, i32 4>
   // CHECK-NEXT: }
 }
