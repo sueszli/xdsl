@@ -2017,7 +2017,10 @@ class CallOpSymbolUserOpInterface(SymbolUserOpInterface):
             raise VerifyException(f"'{op.callee}' could not be found in symbol table")
 
         if not isinstance(found_callee, FuncOp):
-            raise VerifyException(f"'{op.callee}' does not reference a valid function")
+            raise VerifyException(
+                f"'{op.callee}' must reference an 'llvm.func', "
+                f"but found '{found_callee.name}'"
+            )
 
 
 @irdl_op_definition
