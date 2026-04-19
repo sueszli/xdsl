@@ -1,4 +1,4 @@
-// RUN: MLIR_GENERIC_ROUNDTRIP
+// RUN: mlir-opt %s --mlir-print-op-generic | xdsl-opt | filecheck %s
 
 "builtin.module"() ({
   %0 = "arith.constant"() {"value" = 0 : i64} : () -> i64
