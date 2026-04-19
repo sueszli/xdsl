@@ -1,7 +1,7 @@
 import pytest
 
 from xdsl.dialects import llvm
-from xdsl.dialects.builtin import ArrayAttr, DictionaryAttr, ModuleOp, UnitAttr, i32
+from xdsl.dialects.builtin import ModuleOp, i32
 from xdsl.dialects.test import TestOp
 from xdsl.ir import Block, Region
 
@@ -67,37 +67,6 @@ def test_convert_module_declaration():
     fn = llvm_module.get_global("my_decl")
     assert fn is not None
     assert not fn.basic_blocks
-
-
-def test_convert_module_arg_attrs_noalias():
-    # llvm.noalias in arg_attrs becomes a noalias LLVM arg attribute
-    ptr_type = llvm.LLVMPointerType()
-    ft = llvm.LLVMFunctionType([ptr_type, ptr_type])
-    arg_attrs = ArrayAttr(
-        [
-            DictionaryAttr({"llvm.noalias": UnitAttr()}),
-            DictionaryAttr({}),
-        ]
-    )
-    func = llvm.FuncOp("my_func", ft, other_props={"arg_attrs": arg_attrs})
-    module = ModuleOp([func])
-
-    llvm_module = convert_module(module)
-    fn = llvm_module.get_global("my_func")
-    assert "noalias" in fn.args[0].attributes
-    assert "noalias" not in fn.args[1].attributes
-
-
-def test_convert_module_no_arg_attrs():
-    # absent arg_attrs leaves args with no noalias attribute
-    ptr_type = llvm.LLVMPointerType()
-    ft = llvm.LLVMFunctionType([ptr_type])
-    func = llvm.FuncOp("my_func", ft)
-    module = ModuleOp([func])
-
-    llvm_module = convert_module(module)
-    fn = llvm_module.get_global("my_func")
-    assert "noalias" not in fn.args[0].attributes
 
 
 def test_convert_module_forward_reference():

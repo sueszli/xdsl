@@ -5,6 +5,26 @@ builtin.module {
 
   // CHECK: declare void @"declaration"()
 
+  llvm.func @noalias_all(%arg0: !llvm.ptr {llvm.noalias}, %arg1: !llvm.ptr {llvm.noalias}) {
+    llvm.return
+  }
+
+  // CHECK: define void @"noalias_all"(ptr noalias %".1", ptr noalias %".2")
+  // CHECK-NEXT: {
+  // CHECK-NEXT: {{.[0-9]+}}:
+  // CHECK-NEXT:   ret void
+  // CHECK-NEXT: }
+
+  llvm.func @noalias_partial(%arg0: !llvm.ptr {llvm.noalias}, %arg1: !llvm.ptr) {
+    llvm.return
+  }
+
+  // CHECK: define void @"noalias_partial"(ptr noalias %".1", ptr %".2")
+  // CHECK-NEXT: {
+  // CHECK-NEXT: {{.[0-9]+}}:
+  // CHECK-NEXT:   ret void
+  // CHECK-NEXT: }
+
   llvm.func @named_entry() {
   ^entry:
     llvm.return
