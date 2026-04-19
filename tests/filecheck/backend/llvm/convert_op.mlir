@@ -34,7 +34,7 @@ builtin.module {
     llvm.return %arg2 : i32
   }
 
-  // llvm.readonly is dropped; llvmlite prints in alphabetical order.
+  // llvm.readonly is dropped. llvmlite prints in alphabetical order.
   // CHECK: define i32 @"arg_attr_flags"(ptr nocapture nofree nonnull %".1", i32 inreg noundef signext %".2", i32 returned zeroext %".3", ptr nest %".4")
   // CHECK-NEXT: {
   // CHECK-NEXT: {{.[0-9]+}}:
