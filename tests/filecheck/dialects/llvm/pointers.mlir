@@ -1,7 +1,7 @@
 // RUN: XDSL_ROUNDTRIP
 builtin.module {
   %0 = arith.constant 0 : i64
-  %1 = "llvm.inttoptr"(%0) : (i64) -> !llvm.ptr
+  %1 = llvm.inttoptr %0 : i64 to !llvm.ptr
   %3 = "llvm.mlir.zero"() : () -> !llvm.ptr
   %4 = "llvm.alloca"(%0) {"alignment" = 32 : i64} : (i64) -> !llvm.ptr
   %6 = "llvm.getelementptr"(%4, %0) <{elem_type = i32, noWrapFlags = 0 : i32, rawConstantIndices = array<i32:-2147483648>}> : (!llvm.ptr, i64) -> !llvm.ptr

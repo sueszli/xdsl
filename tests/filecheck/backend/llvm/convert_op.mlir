@@ -408,8 +408,8 @@ builtin.module {
     %0 = llvm.trunc %arg1 : i64 to i32
     %1 = llvm.zext %arg0 : i32 to i64
     %2 = llvm.sext %arg0 : i32 to i64
-    %3 = "llvm.ptrtoint"(%arg2) : (!llvm.ptr) -> i64
-    %4 = "llvm.inttoptr"(%arg1) : (i64) -> !llvm.ptr
+    %3 = llvm.ptrtoint %arg2 : !llvm.ptr to i64
+    %4 = llvm.inttoptr %arg1 : i64 to !llvm.ptr
     %5 = llvm.bitcast %arg1 : i64 to f64
     %6 = llvm.fpext %arg3 : f32 to f64
     %7 = llvm.sitofp %arg0 : i32 to f32
@@ -806,7 +806,7 @@ builtin.module {
   }
 
   llvm.func @addressof_op() {
-    %0 = "llvm.mlir.addressof"() <{global_name = @addressof_target}> : () -> !llvm.ptr
+    %0 = llvm.mlir.addressof @addressof_target : !llvm.ptr
     "llvm.call"(%0) <{callee = @callee, fastmathFlags = #llvm.fastmath<>, CConv = #llvm.cconv<ccc>, TailCallKind = #llvm.tailcallkind<none>, operandSegmentSizes = array<i32: 1, 0>}> : (!llvm.ptr) -> ()
     llvm.return
   }
