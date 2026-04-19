@@ -1540,6 +1540,8 @@ class GlobalOp(IRDLOperation):
 class AddressOfOp(IRDLOperation):
     name = "llvm.mlir.addressof"
 
+    assembly_format = "$global_name attr-dict `:` type($result)"
+
     global_name = prop_def(SymbolRefAttr)
     result = result_def(LLVMPointerType)
 
