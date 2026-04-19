@@ -105,11 +105,13 @@ def convert_module(
         arg_types: list[ir.Type] = []
         for idx, mlir_type in enumerate(op.function_type.inputs):
             base = convert_type(mlir_type)
-            if isinstance(base, ir.PointerType) and op.arg_attrs is not None:
-                attrs = op.arg_attrs.data[idx].data
-                elem = next((attrs[n] for n in _ARG_ATTR_TYPES if n in attrs), None)
-                if elem is not None:
-                    base = ir.PointerType(convert_type(elem), addrspace=base.addrspace)
+            if not isinstance(base, ir.PointerType) or op.arg_attrs is None:
+                arg_types.append(base)
+                continue
+            attrs = op.arg_attrs.data[idx].data
+            elem = next((attrs[n] for n in _ARG_ATTR_TYPES if n in attrs), None)
+            if elem is not None:
+                base = ir.PointerType(convert_type(elem), addrspace=base.addrspace)
             arg_types.append(base)
         func_type = ir.FunctionType(ret_type, arg_types)
         fn = ir.Function(llvm_module, func_type, name=op.sym_name.data)
@@ -120,15 +122,16 @@ def convert_module(
             for mlir_name, value in attr_dict.data.items():
                 if mlir_name in _ARG_ATTR_FLAGS:
                     llvm_arg.add_attribute(_ARG_ATTR_FLAGS[mlir_name])
-                elif mlir_name in _ARG_ATTR_TYPES:
+                    continue
+                if mlir_name in _ARG_ATTR_TYPES:
                     llvm_arg.add_attribute(_ARG_ATTR_TYPES[mlir_name])
-                elif mlir_name in _ARG_ATTR_INTS:
-                    assert isinstance(value, IntegerAttr)
-                    setattr(
-                        llvm_arg.attributes,
-                        _ARG_ATTR_INTS[mlir_name],
-                        value.value.data,
-                    )
+                    continue
+                if mlir_name not in _ARG_ATTR_INTS:
+                    continue
+                assert isinstance(value, IntegerAttr)
+                setattr(
+                    llvm_arg.attributes, _ARG_ATTR_INTS[mlir_name], value.value.data
+                )
 
     # Generate function bodies
     for func_op in func_ops:
