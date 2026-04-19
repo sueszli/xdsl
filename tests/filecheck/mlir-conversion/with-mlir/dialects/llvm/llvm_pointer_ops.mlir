@@ -3,9 +3,9 @@
 "builtin.module"() ({
   %0 = "arith.constant"() {"value" = 0 : i64} : () -> i64
   %1 = "llvm.inttoptr"(%0) : (i64) -> !llvm.ptr
-  %3 = "llvm.mlir.zero"() : () -> !llvm.ptr
-  %zero_struct = "llvm.mlir.zero"() : () -> !llvm.struct<(i32, f32)>
-  %zero_addrspace = "llvm.mlir.zero"() : () -> !llvm.ptr<1>
+  %3 = llvm.mlir.zero : !llvm.ptr
+  %zero_struct = llvm.mlir.zero : !llvm.struct<(i32, f32)>
+  %zero_addrspace = llvm.mlir.zero : !llvm.ptr<1>
   %4 = "llvm.alloca"(%0) {"alignment" = 32 : i64, "elem_type" = i64} : (i64) -> !llvm.ptr
   %6 = "llvm.alloca"(%0) {"alignment" = 32 : i64, "elem_type" = i32} : (i64) -> !llvm.ptr
   %7 = "llvm.getelementptr"(%6, %0) <{"elem_type" = i64, noWrapFlags = 0 : i32, "rawConstantIndices" = array<i32: -2147483648>}> : (!llvm.ptr, i64) -> !llvm.ptr
