@@ -30,8 +30,17 @@ _ARG_ATTR_INTS = {
     "llvm.dereferenceable_or_null": "dereferenceable_or_null",
 }
 
-# Type-valued attrs (llvm.byval, llvm.sret, ...) need the pointer's pointee,
-# which opaque PointerType lacks.
+# Type-valued attrs: llvmlite's _expand renders byval(T) by reading
+# typ.pointee, which opaque PointerType lacks. We synthesise a typed pointer
+# for the affected arg so llvmlite has a pointee to print.
+_ARG_ATTR_TYPES = {
+    "llvm.byval": "byval",
+    "llvm.byref": "byref",
+    "llvm.sret": "sret",
+    "llvm.inalloca": "inalloca",
+    "llvm.preallocated": "preallocated",
+    "llvm.elementtype": "elementtype",
+}
 
 
 def _convert_func(op: llvm.FuncOp, llvm_module: ir.Module):
@@ -95,7 +104,21 @@ def convert_module(
     # Declare all functions (enables forward references)
     for op in func_ops:
         ret_type = convert_type(op.function_type.output)
-        arg_types = [convert_type(t) for t in op.function_type.inputs]
+        arg_types: list[ir.Type] = []
+        for idx, mlir_type in enumerate(op.function_type.inputs):
+            base = convert_type(mlir_type)
+            if op.arg_attrs is None or not isinstance(base, ir.PointerType):
+                arg_types.append(base)
+                continue
+            attrs = op.arg_attrs.data[idx]
+            for mlir_name in _ARG_ATTR_TYPES:
+                if mlir_name not in attrs.data:
+                    continue
+                base = ir.PointerType(
+                    convert_type(attrs.data[mlir_name]), addrspace=base.addrspace
+                )
+                break
+            arg_types.append(base)
         func_type = ir.FunctionType(ret_type, arg_types)
         fn = ir.Function(llvm_module, func_type, name=op.sym_name.data)
 
@@ -112,6 +135,10 @@ def convert_module(
                 val = attr_dict.data[mlir_name]
                 assert isinstance(val, IntegerAttr)
                 setattr(llvm_arg.attributes, setter_name, val.value.data)
+            for mlir_name, llvm_name in _ARG_ATTR_TYPES.items():
+                if mlir_name not in attr_dict.data:
+                    continue
+                llvm_arg.add_attribute(llvm_name)
 
     # Generate function bodies
     for func_op in func_ops:
