@@ -1,4 +1,4 @@
-// RUN: mlir-opt %s --mlir-print-op-generic | xdsl-opt | filecheck %s
+// RUN: MLIR_GENERIC_ROUNDTRIP
 
 "builtin.module"() ({
   %0 = "arith.constant"() {"value" = 0 : i64} : () -> i64
@@ -17,12 +17,12 @@
   %ptr_int = "llvm.ptrtoint"(%1) : (!llvm.ptr) -> i64
 }) : () -> ()
 
-// CHECK:       "builtin.module"() ({
-// CHECK-NEXT:    [[CST:%.*]] = "arith.constant"() <{value = 0 : i64}> : () -> i64
-// CHECK-NEXT:    [[PTR:%.*]] = "llvm.inttoptr"([[CST]]) : (i64) -> !llvm.ptr
-// CHECK-NEXT:    {{%.*}} = "llvm.mlir.zero"() : () -> !llvm.ptr
-// CHECK-NEXT:    {{%.*}} = "llvm.mlir.zero"() : () -> !llvm.struct<(i32, f32)>
-// CHECK-NEXT:    {{%.*}} = "llvm.mlir.zero"() : () -> !llvm.ptr<1>
+// CHECK:       builtin.module {
+// CHECK-NEXT:    [[CST:%.*]] = arith.constant 0 : i64
+// CHECK-NEXT:    [[PTR:%.*]] = llvm.inttoptr [[CST]] : i64 to !llvm.ptr
+// CHECK-NEXT:    {{%.*}} = llvm.mlir.zero : !llvm.ptr
+// CHECK-NEXT:    {{%.*}} = llvm.mlir.zero : !llvm.struct<(i32, f32)>
+// CHECK-NEXT:    {{%.*}} = llvm.mlir.zero : !llvm.ptr<1>
 // CHECK-NEXT:    [[ALLOCA64:%.*]] = "llvm.alloca"([[CST]]) <{alignment = 32 : i64, elem_type = i64}> : (i64) -> !llvm.ptr
 // CHECK-NEXT:    [[ALLOCA32:%.*]] = "llvm.alloca"([[CST]]) <{alignment = 32 : i64, elem_type = i32}> : (i64) -> !llvm.ptr
 // CHECK-NEXT:    {{%.*}} = "llvm.getelementptr"([[ALLOCA32]], [[CST]]) <{elem_type = i64, noWrapFlags = 0 : i32, rawConstantIndices = array<i32: -2147483648>}> : (!llvm.ptr, i64) -> !llvm.ptr
@@ -31,5 +31,5 @@
 // CHECK-NEXT:    {{%.*}} = "llvm.load"([[ALLOCA64]]) <{ordering = 0 : i64}> : (!llvm.ptr) -> i64
 // CHECK-NEXT:    {{%.*}} = "llvm.load"([[ALLOCA64]]) <{alignment = 16 : i64, ordering = 0 : i64}> : (!llvm.ptr) -> i32
 // CHECK-NEXT:    {{%.*}} = "llvm.load"([[ALLOCA64]]) <{alignment = 32 : i64, ordering = 1 : i64}> : (!llvm.ptr) -> i32
-// CHECK-NEXT:    {{%.*}} = "llvm.ptrtoint"([[PTR]]) : (!llvm.ptr) -> i64
-// CHECK-NEXT:  }) : () -> ()
+// CHECK-NEXT:    {{%.*}} = llvm.ptrtoint [[PTR]] : !llvm.ptr to i64
+// CHECK-NEXT:  }
