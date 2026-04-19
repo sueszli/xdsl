@@ -1368,21 +1368,6 @@ class StoreOp(IRDLOperation):
 
 
 @irdl_op_definition
-class NullOp(IRDLOperation):
-    name = "llvm.mlir.null"
-
-    nullptr = result_def(LLVMPointerType)
-
-    traits = traits_def(NoMemoryEffect())
-
-    def __init__(self, ptr_type: LLVMPointerType | None = None):
-        if ptr_type is None:
-            ptr_type = LLVMPointerType()
-
-        super().__init__(result_types=[ptr_type])
-
-
-@irdl_op_definition
 class ExtractValueOp(IRDLOperation):
     """
     See external [documentation](https://mlir.llvm.org/docs/Dialects/LLVM/#llvmextractvalue-mlirllvmextractvalueop).
@@ -2584,7 +2569,6 @@ LLVM = Dialect(
         LoadOp,
         MaskedStoreOp,
         MulOp,
-        NullOp,
         OrOp,
         PtrToIntOp,
         ReturnOp,
