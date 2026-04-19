@@ -7,9 +7,36 @@ from xdsl.backend.llvm.convert_op import convert_op
 from xdsl.backend.llvm.convert_type import convert_type
 from xdsl.context import Context
 from xdsl.dialects import llvm
-from xdsl.dialects.builtin import ModuleOp
+from xdsl.dialects.builtin import IntegerAttr, ModuleOp
 from xdsl.ir import Block, SSAValue
 from xdsl.utils.target import Target
+
+# Flag-style parameter attrs translated by mlir-translate (see AttrKindDetail.h
+# in MLIR) that llvmlite's Argument.add_attribute accepts.
+_ARG_ATTR_FLAGS = {
+    "llvm.inreg": "inreg",
+    "llvm.nest": "nest",
+    "llvm.noalias": "noalias",
+    "llvm.nocapture": "nocapture",
+    "llvm.nofree": "nofree",
+    "llvm.nonnull": "nonnull",
+    "llvm.noundef": "noundef",
+    "llvm.returned": "returned",
+    "llvm.signext": "signext",
+    "llvm.zeroext": "zeroext",
+}
+
+# Integer-valued parameter attrs, set via llvmlite's ArgumentAttributes setters.
+_ARG_ATTR_INTS = {
+    "llvm.align": "align",
+    "llvm.dereferenceable": "dereferenceable",
+    "llvm.dereferenceable_or_null": "dereferenceable_or_null",
+}
+
+# Type-valued parameter attrs (llvm.byval, llvm.byref, llvm.sret, llvm.inalloca,
+# llvm.preallocated, llvm.elementtype) are intentionally unsupported: llvmlite
+# derives the type from the pointer's pointee, which doesn't exist on opaque
+# pointers.
 
 
 def _convert_func(op: llvm.FuncOp, llvm_module: ir.Module):
@@ -80,8 +107,15 @@ def convert_module(
         if op.arg_attrs is None:
             continue
         for llvm_arg, attr_dict in zip(fn.args, op.arg_attrs):
-            if "llvm.noalias" in attr_dict.data:
-                llvm_arg.add_attribute("noalias")
+            for mlir_name, llvm_name in _ARG_ATTR_FLAGS.items():
+                if mlir_name in attr_dict.data:
+                    llvm_arg.add_attribute(llvm_name)
+            for mlir_name, setter_name in _ARG_ATTR_INTS.items():
+                if mlir_name not in attr_dict.data:
+                    continue
+                val = attr_dict.data[mlir_name]
+                assert isinstance(val, IntegerAttr)
+                setattr(llvm_arg.attributes, setter_name, val.value.data)
 
     # Generate function bodies
     for func_op in func_ops:

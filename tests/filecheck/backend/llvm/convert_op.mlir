@@ -25,6 +25,51 @@ builtin.module {
   // CHECK-NEXT:   ret void
   // CHECK-NEXT: }
 
+  llvm.func @arg_attr_flags(
+      %arg0: !llvm.ptr {llvm.nocapture, llvm.nofree, llvm.nonnull, llvm.readonly},
+      %arg1: i32 {llvm.noundef, llvm.signext, llvm.inreg},
+      %arg2: i32 {llvm.zeroext, llvm.returned},
+      %arg3: !llvm.ptr {llvm.nest}
+  ) -> i32 {
+    llvm.return %arg2 : i32
+  }
+
+  // "llvm.readonly" is translated by mlir-translate but not yet by this backend,
+  // so it is expected to be dropped silently here. llvmlite prints parameter
+  // attributes in alphabetical order.
+  // CHECK: define i32 @"arg_attr_flags"(ptr nocapture nofree nonnull %".1", i32 inreg noundef signext %".2", i32 returned zeroext %".3", ptr nest %".4")
+  // CHECK-NEXT: {
+  // CHECK-NEXT: {{.[0-9]+}}:
+  // CHECK-NEXT:   ret i32 %".3"
+  // CHECK-NEXT: }
+
+  llvm.func @arg_attr_ints(
+      %arg0: !llvm.ptr {llvm.align = 16 : i64},
+      %arg1: !llvm.ptr {llvm.dereferenceable = 32 : i64},
+      %arg2: !llvm.ptr {llvm.dereferenceable_or_null = 64 : i64},
+      %arg3: !llvm.ptr {llvm.align = 8 : i64, llvm.dereferenceable = 128 : i64, llvm.noalias}
+  ) {
+    llvm.return
+  }
+
+  // CHECK: define void @"arg_attr_ints"(ptr align 16 %".1", ptr dereferenceable(32) %".2", ptr dereferenceable_or_null(64) %".3", ptr noalias align 8 dereferenceable(128) %".4")
+  // CHECK-NEXT: {
+  // CHECK-NEXT: {{.[0-9]+}}:
+  // CHECK-NEXT:   ret void
+  // CHECK-NEXT: }
+
+  llvm.func @arg_attr_unknown(%arg0: !llvm.ptr {llvm.readonly, llvm.byval = i32}, %arg1: i32) {
+    llvm.return
+  }
+
+  // Unsupported arg attributes (e.g. llvm.readonly, type-valued llvm.byval) are
+  // silently ignored.
+  // CHECK: define void @"arg_attr_unknown"(ptr %".1", i32 %".2")
+  // CHECK-NEXT: {
+  // CHECK-NEXT: {{.[0-9]+}}:
+  // CHECK-NEXT:   ret void
+  // CHECK-NEXT: }
+
   llvm.func @named_entry() {
   ^entry:
     llvm.return
