@@ -765,7 +765,7 @@ builtin.module {
   // CHECK-NEXT: }
 
   llvm.func @zero_op() -> !llvm.ptr {
-    %0 = "llvm.mlir.zero"() : () -> !llvm.ptr
+    %0 = llvm.mlir.zero : !llvm.ptr
     llvm.return %0 : !llvm.ptr
   }
 
