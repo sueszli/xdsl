@@ -14,7 +14,7 @@ builtin.module {
 
 // CHECK:       builtin.module {
 // CHECK-NEXT:    %0 = arith.constant 0 : i64
-// CHECK-NEXT:    %1 = "llvm.inttoptr"(%0) : (i64) -> !llvm.ptr
+// CHECK-NEXT:    %1 = llvm.inttoptr %0 : i64 to !llvm.ptr
 // CHECK-NEXT:    %2 = llvm.mlir.zero : !llvm.ptr
 // CHECK-NEXT:    %3 = "llvm.alloca"(%0) <{alignment = 32 : i64}> : (i64) -> !llvm.ptr
 // CHECK-NEXT:    %4 = "llvm.getelementptr"(%3, %0) <{elem_type = i32, noWrapFlags = 0 : i32, rawConstantIndices = array<i32: -2147483648>}> : (!llvm.ptr, i64) -> !llvm.ptr
