@@ -34,9 +34,7 @@ builtin.module {
     llvm.return %arg2 : i32
   }
 
-  // "llvm.readonly" is translated by mlir-translate but not yet by this backend,
-  // so it is expected to be dropped silently here. llvmlite prints parameter
-  // attributes in alphabetical order.
+  // llvm.readonly is dropped; llvmlite prints in alphabetical order.
   // CHECK: define i32 @"arg_attr_flags"(ptr nocapture nofree nonnull %".1", i32 inreg noundef signext %".2", i32 returned zeroext %".3", ptr nest %".4")
   // CHECK-NEXT: {
   // CHECK-NEXT: {{.[0-9]+}}:
@@ -62,8 +60,7 @@ builtin.module {
     llvm.return
   }
 
-  // Unsupported arg attributes (e.g. llvm.readonly, type-valued llvm.byval) are
-  // silently ignored.
+  // Unsupported attrs are dropped.
   // CHECK: define void @"arg_attr_unknown"(ptr %".1", i32 %".2")
   // CHECK-NEXT: {
   // CHECK-NEXT: {{.[0-9]+}}:

@@ -11,8 +11,6 @@ from xdsl.dialects.builtin import IntegerAttr, ModuleOp
 from xdsl.ir import Block, SSAValue
 from xdsl.utils.target import Target
 
-# Flag-style parameter attrs translated by mlir-translate (see AttrKindDetail.h
-# in MLIR) that llvmlite's Argument.add_attribute accepts.
 _ARG_ATTR_FLAGS = {
     "llvm.inreg": "inreg",
     "llvm.nest": "nest",
@@ -26,17 +24,14 @@ _ARG_ATTR_FLAGS = {
     "llvm.zeroext": "zeroext",
 }
 
-# Integer-valued parameter attrs, set via llvmlite's ArgumentAttributes setters.
 _ARG_ATTR_INTS = {
     "llvm.align": "align",
     "llvm.dereferenceable": "dereferenceable",
     "llvm.dereferenceable_or_null": "dereferenceable_or_null",
 }
 
-# Type-valued parameter attrs (llvm.byval, llvm.byref, llvm.sret, llvm.inalloca,
-# llvm.preallocated, llvm.elementtype) are intentionally unsupported: llvmlite
-# derives the type from the pointer's pointee, which doesn't exist on opaque
-# pointers.
+# Type-valued attrs (llvm.byval, llvm.sret, ...) need the pointer's pointee,
+# which opaque PointerType lacks.
 
 
 def _convert_func(op: llvm.FuncOp, llvm_module: ir.Module):
