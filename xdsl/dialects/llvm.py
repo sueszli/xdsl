@@ -1191,6 +1191,8 @@ class AllocaOp(IRDLOperation):
 class IntToPtrOp(IRDLOperation):
     name = "llvm.inttoptr"
 
+    assembly_format = "$input attr-dict `:` type($input) `to` type($output)"
+
     input = operand_def(IntegerType)
 
     output = result_def(LLVMPointerType)
