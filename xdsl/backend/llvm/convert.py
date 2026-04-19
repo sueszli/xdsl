@@ -30,9 +30,7 @@ _ARG_ATTR_INTS = {
     "llvm.dereferenceable_or_null": "dereferenceable_or_null",
 }
 
-# Type-valued attrs: llvmlite's _expand renders byval(T) by reading
-# typ.pointee, which opaque PointerType lacks. We synthesise a typed pointer
-# for the affected arg so llvmlite has a pointee to print.
+# Type-valued attrs need a typed pointer so llvmlite can read pointee.
 _ARG_ATTR_TYPES = {
     "llvm.byval": "byval",
     "llvm.byref": "byref",
