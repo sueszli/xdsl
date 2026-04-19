@@ -1438,6 +1438,8 @@ class UndefOp(IRDLOperation):
 
     name = "llvm.mlir.undef"
 
+    assembly_format = "attr-dict `:` type($res)"
+
     res = result_def(Attribute)
 
     traits = traits_def(NoMemoryEffect())
