@@ -75,7 +75,13 @@ def convert_module(
         ret_type = convert_type(op.function_type.output)
         arg_types = [convert_type(t) for t in op.function_type.inputs]
         func_type = ir.FunctionType(ret_type, arg_types)
-        ir.Function(llvm_module, func_type, name=op.sym_name.data)
+        fn = ir.Function(llvm_module, func_type, name=op.sym_name.data)
+
+        if op.arg_attrs is None:
+            continue
+        for llvm_arg, attr_dict in zip(fn.args, op.arg_attrs):
+            if "llvm.noalias" in attr_dict.data:
+                llvm_arg.add_attribute("noalias")
 
     # Generate function bodies
     for func_op in func_ops:
