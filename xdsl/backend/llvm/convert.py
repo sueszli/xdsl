@@ -103,8 +103,9 @@ def convert_module(
             continue
         for llvm_arg, attr_dict in zip(fn.args, op.arg_attrs):
             for mlir_name, llvm_name in _ARG_ATTR_FLAGS.items():
-                if mlir_name in attr_dict.data:
-                    llvm_arg.add_attribute(llvm_name)
+                if mlir_name not in attr_dict.data:
+                    continue
+                llvm_arg.add_attribute(llvm_name)
             for mlir_name, setter_name in _ARG_ATTR_INTS.items():
                 if mlir_name not in attr_dict.data:
                     continue
