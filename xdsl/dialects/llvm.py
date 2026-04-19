@@ -1294,6 +1294,8 @@ class InlineAsmOp(IRDLOperation):
 class PtrToIntOp(IRDLOperation):
     name = "llvm.ptrtoint"
 
+    assembly_format = "$input attr-dict `:` type($input) `to` type($output)"
+
     input = operand_def(LLVMPointerType)
 
     output = result_def(IntegerType)
