@@ -105,13 +105,13 @@ def convert_module(
         arg_types: list[ir.Type] = []
         for idx, mlir_type in enumerate(op.function_type.inputs):
             base = convert_type(mlir_type)
-            if not isinstance(base, ir.PointerType) or op.arg_attrs is None:
-                arg_types.append(base)
-                continue
-            attrs = op.arg_attrs.data[idx].data
-            elem = next((attrs[n] for n in _ARG_ATTR_TYPES if n in attrs), None)
-            if elem is not None:
-                base = ir.PointerType(convert_type(elem), addrspace=base.addrspace)
+            # Typed pointer lets llvmlite emit the pointee for byval/sret/etc.
+            if isinstance(base, ir.PointerType) and op.arg_attrs is not None:
+                attrs = op.arg_attrs.data[idx].data
+                if elem := next(
+                    (attrs[n] for n in _ARG_ATTR_TYPES if n in attrs), None
+                ):
+                    base = ir.PointerType(convert_type(elem), addrspace=base.addrspace)
             arg_types.append(base)
         func_type = ir.FunctionType(ret_type, arg_types)
         fn = ir.Function(llvm_module, func_type, name=op.sym_name.data)
