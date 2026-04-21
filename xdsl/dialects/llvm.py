@@ -946,6 +946,7 @@ class ICmpOp(IRDLOperation):
                 )
 
 
+# TODO: custom assembly format https://github.com/xdslproject/xdsl/issues/5897
 @irdl_op_definition
 class GEPOp(IRDLOperation):
     """
@@ -1167,6 +1168,7 @@ class GEPOp(IRDLOperation):
         )
 
 
+# TODO: custom assembly format https://github.com/xdslproject/xdsl/issues/5897
 @irdl_op_definition
 class AllocaOp(IRDLOperation):
     name = "llvm.alloca"
@@ -1229,6 +1231,7 @@ class TailCallKindAttr(EnumAttribute[TailCallKind]):
             super().print_parameter(printer)
 
 
+# TODO: custom assembly format https://github.com/xdslproject/xdsl/issues/5897
 @irdl_op_definition
 class InlineAsmOp(IRDLOperation):
     """
@@ -1306,6 +1309,7 @@ class PtrToIntOp(IRDLOperation):
         super().__init__(operands=[arg], result_types=[int_type])
 
 
+# TODO: custom assembly format https://github.com/xdslproject/xdsl/issues/5897
 @irdl_op_definition
 class LoadOp(IRDLOperation):
     name = "llvm.load"
@@ -1334,6 +1338,7 @@ class LoadOp(IRDLOperation):
         super().__init__(operands=[ptr], result_types=[result_type], properties=props)
 
 
+# TODO: custom assembly format https://github.com/xdslproject/xdsl/issues/5897
 @irdl_op_definition
 class StoreOp(IRDLOperation):
     name = "llvm.store"
@@ -1373,6 +1378,7 @@ class StoreOp(IRDLOperation):
         )
 
 
+# TODO: custom assembly format https://github.com/xdslproject/xdsl/issues/5897
 @irdl_op_definition
 class ExtractValueOp(IRDLOperation):
     """
@@ -1403,6 +1409,7 @@ class ExtractValueOp(IRDLOperation):
         )
 
 
+# TODO: custom assembly format https://github.com/xdslproject/xdsl/issues/5897
 @irdl_op_definition
 class InsertValueOp(IRDLOperation):
     """
@@ -1452,6 +1459,7 @@ class UndefOp(IRDLOperation):
         super().__init__(result_types=[result_type])
 
 
+# TODO: custom assembly format https://github.com/xdslproject/xdsl/issues/5897
 @irdl_op_definition
 class GlobalOp(IRDLOperation):
     name = "llvm.mlir.global"
@@ -1952,6 +1960,7 @@ class FastMathAttr(FastMathAttrBase):
     name = "llvm.fastmath"
 
 
+# TODO: custom assembly format https://github.com/xdslproject/xdsl/issues/5897
 @irdl_op_definition
 class CallIntrinsicOp(IRDLOperation):
     """
@@ -2013,6 +2022,7 @@ class CallOpSymbolUserOpInterface(SymbolUserOpInterface):
             raise VerifyException(f"'{op.callee}' does not reference a valid function")
 
 
+# TODO: custom assembly format https://github.com/xdslproject/xdsl/issues/5897
 @irdl_op_definition
 class CallOp(IRDLOperation):
     name = "llvm.call"
