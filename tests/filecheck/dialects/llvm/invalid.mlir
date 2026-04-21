@@ -102,4 +102,4 @@ llvm.func @caller(%arg0: i32) -> i32 {
   llvm.return %0 : i32
 }
 
-// CHECK: '@not_llvm_func' does not reference a valid function
+// CHECK: '@not_llvm_func' must reference an 'llvm.func', but found 'func.func'
