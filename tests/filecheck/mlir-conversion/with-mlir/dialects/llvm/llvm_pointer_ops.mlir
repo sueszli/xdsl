@@ -1,4 +1,4 @@
-// RUN: mlir-opt %s --mlir-print-op-generic | xdsl-opt | filecheck %s
+// RUN: MLIR_ROUNDTRIP
 
 "builtin.module"() ({
   %0 = "arith.constant"() {"value" = 0 : i64} : () -> i64
@@ -23,13 +23,13 @@
 // CHECK-NEXT:    {{%.*}} = llvm.mlir.zero : !llvm.ptr
 // CHECK-NEXT:    {{%.*}} = llvm.mlir.zero : !llvm.struct<(i32, f32)>
 // CHECK-NEXT:    {{%.*}} = llvm.mlir.zero : !llvm.ptr<1>
-// CHECK-NEXT:    [[ALLOCA64:%.*]] = "llvm.alloca"([[CST]]) <{alignment = 32 : i64, elem_type = i64}> : (i64) -> !llvm.ptr
-// CHECK-NEXT:    [[ALLOCA32:%.*]] = "llvm.alloca"([[CST]]) <{alignment = 32 : i64, elem_type = i32}> : (i64) -> !llvm.ptr
-// CHECK-NEXT:    {{%.*}} = "llvm.getelementptr"([[ALLOCA32]], [[CST]]) <{elem_type = i64, noWrapFlags = 0 : i32, rawConstantIndices = array<i32: -2147483648>}> : (!llvm.ptr, i64) -> !llvm.ptr
-// CHECK-NEXT:    "llvm.store"({{%.*}}, [[ALLOCA32]]) <{alignment = 32 : i64, nontemporal, ordering = 0 : i64, volatile_}> : (i64, !llvm.ptr) -> ()
-// CHECK-NEXT:    {{%.*}} = "llvm.load"([[PTR]]) <{ordering = 0 : i64}> : (!llvm.ptr) -> i32
-// CHECK-NEXT:    {{%.*}} = "llvm.load"([[ALLOCA64]]) <{ordering = 0 : i64}> : (!llvm.ptr) -> i64
-// CHECK-NEXT:    {{%.*}} = "llvm.load"([[ALLOCA64]]) <{alignment = 16 : i64, ordering = 0 : i64}> : (!llvm.ptr) -> i32
-// CHECK-NEXT:    {{%.*}} = "llvm.load"([[ALLOCA64]]) <{alignment = 32 : i64, ordering = 1 : i64}> : (!llvm.ptr) -> i32
+// CHECK-NEXT:    [[ALLOCA64:%.*]] = llvm.alloca [[CST]] x i64 {alignment = 32 : i64} : (i64) -> !llvm.ptr
+// CHECK-NEXT:    [[ALLOCA32:%.*]] = llvm.alloca [[CST]] x i32 {alignment = 32 : i64} : (i64) -> !llvm.ptr
+// CHECK-NEXT:    {{%.*}} = llvm.getelementptr [[ALLOCA32]][[[CST]]] : (!llvm.ptr, i64) -> !llvm.ptr, i64
+// CHECK-NEXT:    llvm.store volatile [[STORED:%.*]], [[ALLOCA32]] {alignment = 32 : i64, nontemporal} : i64, !llvm.ptr
+// CHECK-NEXT:    {{%.*}} = llvm.load [[PTR]] : !llvm.ptr -> i32
+// CHECK-NEXT:    [[STORED]] = llvm.load [[ALLOCA64]] : !llvm.ptr -> i64
+// CHECK-NEXT:    {{%.*}} = llvm.load [[ALLOCA64]] {alignment = 16 : i64} : !llvm.ptr -> i32
+// CHECK-NEXT:    {{%.*}} = llvm.load [[ALLOCA64]] atomic unordered {alignment = 32 : i64} : !llvm.ptr -> i32
 // CHECK-NEXT:    {{%.*}} = llvm.ptrtoint [[PTR]] : !llvm.ptr to i64
 // CHECK-NEXT:  }
