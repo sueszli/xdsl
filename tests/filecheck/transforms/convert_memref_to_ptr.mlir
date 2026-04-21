@@ -287,6 +287,31 @@ memref.store %fv, %mstr[%idx] {"nontemporal" = false} : memref<2xf64, strided<[?
 
 // -----
 
+// TODO: multi-dim strided layout with dynamic leading stride
+%fv2, %idx1_2, %idx2_2, %mstr_2 = "test.op"() : () -> (f64, index, index, memref<4x8xf64, strided<[?, 1]>>)
+memref.store %fv2, %mstr_2[%idx1_2, %idx2_2] {"nontemporal" = false} : memref<4x8xf64, strided<[?, 1]>>
+
+// CHECK: MemRef memref<4x8xf64, strided<[?, 1]>> with dynamic stride is not yet implemented
+
+// -----
+
+// TODO: strided layout with all-dynamic strides
+%fv3, %idx1_3, %idx2_3, %mstr_3 = "test.op"() : () -> (f64, index, index, memref<4x8xf64, strided<[?, ?]>>)
+memref.store %fv3, %mstr_3[%idx1_3, %idx2_3] {"nontemporal" = false} : memref<4x8xf64, strided<[?, ?]>>
+
+// CHECK: MemRef memref<4x8xf64, strided<[?, ?]>> with dynamic stride is not yet implemented
+
+// -----
+
+// TODO: subview whose source has a strided layout with dynamic stride
+%sv_src, %sv_off = "test.op"() : () -> (memref<4x8xf64, strided<[?, 1]>>, index)
+%sv = memref.subview %sv_src[%sv_off, 0][2, 4][1, 1] : memref<4x8xf64, strided<[?, 1]>> to memref<2x4xf64, strided<[?, 1], offset: ?>>
+"test.op"(%sv) : (memref<2x4xf64, strided<[?, 1], offset: ?>>) -> ()
+
+// CHECK: MemRef memref<4x8xf64, strided<[?, 1]>> with dynamic stride is not yet implemented
+
+// -----
+
 %fv, %idx, %mstr = "test.op"() : () -> (f64, index, memref<2xf64, affine_map<(d0) -> (d0 * 10)>>)
 memref.store %fv, %mstr[%idx] {"nontemporal" = false} : memref<2xf64, affine_map<(d0) -> (d0 * 10)>>
 
