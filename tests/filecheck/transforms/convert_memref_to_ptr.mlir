@@ -252,9 +252,31 @@ memref.store %fv4, %mstr4[%idx4] {"nontemporal" = false} : memref<2xf32, strided
 // CHECK-NEXT:  %offset_pointer_5 = ptr_xdsl.ptradd %dyn_src2_1, %scaled_pointer_offset_5 : (!ptr_xdsl.ptr, index) -> !ptr_xdsl.ptr
 // CHECK-NEXT:  %subview_static = ptr_xdsl.from_ptr %offset_pointer_5 : !ptr_xdsl.ptr -> memref<4x8xf32, strided<[?, 1], offset: ?>>
 
-"test.op"(%lv_dyn1, %lv_dyn2, %lv_3d, %lv_1d, %subview_dyn, %subview_static) : (f32, f32, f32, f32, memref<4x8xf32, strided<[?, 1], offset: ?>>, memref<4x8xf32, strided<[?, 1], offset: ?>>) -> ()
+// 4D with unit dim and both a static-int and dynamic dim, exercises
+// the `case (_, 1)` stride fold and the `isinstance(dim_size, int)` branch
+%a, %b, %c, %d, %m4d = "test.op"() : () -> (index, index, index, index, memref<?x1x4x?xf32>)
+%lv_4d = memref.load %m4d[%a, %b, %c, %d] {"nontemporal" = false} : memref<?x1x4x?xf32>
 
-// CHECK-NEXT:  "test.op"(%lv_dyn1, %lv_dyn2, %lv_3d, %lv_1d, %subview_dyn, %subview_static) : (f32, f32, f32, f32, memref<4x8xf32, strided<[?, 1], offset: ?>>, memref<4x8xf32, strided<[?, 1], offset: ?>>) -> ()
+// CHECK-NEXT:  %a, %b, %c, %d, %m4d = "test.op"() : () -> (index, index, index, index, memref<?x1x4x?xf32>)
+// CHECK-NEXT:  %m4d_1 = ptr_xdsl.to_ptr %m4d : memref<?x1x4x?xf32> -> !ptr_xdsl.ptr
+// CHECK-NEXT:  %dim_idx_4 = arith.constant 3 : index
+// CHECK-NEXT:  %6 = memref.dim %m4d, %dim_idx_4 : memref<?x1x4x?xf32>
+// CHECK-NEXT:  %7 = arith.constant 4 : index
+// CHECK-NEXT:  %8 = arith.muli %6, %7 : index
+// CHECK-NEXT:  %pointer_dim_offset_4 = arith.muli %a, %8 : index
+// CHECK-NEXT:  %pointer_dim_offset_5 = arith.muli %b, %8 : index
+// CHECK-NEXT:  %pointer_dim_stride_6 = arith.addi %pointer_dim_offset_4, %pointer_dim_offset_5 : index
+// CHECK-NEXT:  %pointer_dim_offset_6 = arith.muli %c, %6 : index
+// CHECK-NEXT:  %pointer_dim_stride_7 = arith.addi %pointer_dim_stride_6, %pointer_dim_offset_6 : index
+// CHECK-NEXT:  %pointer_dim_stride_8 = arith.addi %pointer_dim_stride_7, %d : index
+// CHECK-NEXT:  %bytes_per_element_6 = ptr_xdsl.type_offset f32 : index
+// CHECK-NEXT:  %scaled_pointer_offset_6 = arith.muli %pointer_dim_stride_8, %bytes_per_element_6 : index
+// CHECK-NEXT:  %offset_pointer_6 = ptr_xdsl.ptradd %m4d_1, %scaled_pointer_offset_6 : (!ptr_xdsl.ptr, index) -> !ptr_xdsl.ptr
+// CHECK-NEXT:  %lv_4d = ptr_xdsl.load %offset_pointer_6 : !ptr_xdsl.ptr -> f32
+
+"test.op"(%lv_dyn1, %lv_dyn2, %lv_3d, %lv_1d, %subview_dyn, %subview_static, %lv_4d) : (f32, f32, f32, f32, memref<4x8xf32, strided<[?, 1], offset: ?>>, memref<4x8xf32, strided<[?, 1], offset: ?>>, f32) -> ()
+
+// CHECK-NEXT:  "test.op"(%lv_dyn1, %lv_dyn2, %lv_3d, %lv_1d, %subview_dyn, %subview_static, %lv_4d) : (f32, f32, f32, f32, memref<4x8xf32, strided<[?, 1], offset: ?>>, memref<4x8xf32, strided<[?, 1], offset: ?>>, f32) -> ()
 
 // -----
 
