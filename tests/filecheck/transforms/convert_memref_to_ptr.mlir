@@ -252,8 +252,7 @@ memref.store %fv4, %mstr4[%idx4] {"nontemporal" = false} : memref<2xf32, strided
 // CHECK-NEXT:  %offset_pointer_5 = ptr_xdsl.ptradd %dyn_src2_1, %scaled_pointer_offset_5 : (!ptr_xdsl.ptr, index) -> !ptr_xdsl.ptr
 // CHECK-NEXT:  %subview_static = ptr_xdsl.from_ptr %offset_pointer_5 : !ptr_xdsl.ptr -> memref<4x8xf32, strided<[?, 1], offset: ?>>
 
-// 4D with unit dim and both a static-int and dynamic dim, exercises
-// the `case (_, 1)` stride fold and the `isinstance(dim_size, int)` branch
+// covers the `(_, 1)` stride fold and `isinstance(dim_size, int)` branch
 %a, %b, %c, %d, %m4d = "test.op"() : () -> (index, index, index, index, memref<?x1x4x?xf32>)
 %lv_4d = memref.load %m4d[%a, %b, %c, %d] {"nontemporal" = false} : memref<?x1x4x?xf32>
 
