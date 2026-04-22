@@ -1949,7 +1949,7 @@ class GlobalOp(IRDLOperation):
         elif isinstance(value, StringAttr):
             global_type = LLVMArrayType(len(value.data), IntegerType(8))
         elif isinstance(value, TypedAttribute):
-            global_type = value.type
+            global_type = value.get_type()
         if global_type is None:
             parser.raise_error("expected `:` followed by global type")
         body = parser.parse_optional_region()
