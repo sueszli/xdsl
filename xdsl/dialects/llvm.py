@@ -74,7 +74,7 @@ from xdsl.irdl import (
     traits_def,
     var_operand_def,
 )
-from xdsl.parser import AttrParser, Parser
+from xdsl.parser import AttrParser, Parser, UnresolvedOperand
 from xdsl.printer import Printer
 from xdsl.traits import (
     IsTerminator,
@@ -1305,7 +1305,9 @@ class TailCallKindAttr(EnumAttribute[TailCallKind]):
             super().print_parameter(printer)
 
 
-# TODO: custom assembly format https://github.com/xdslproject/xdsl/issues/5897
+ASM_DIALECT_KEYWORDS: dict[int, str] = {0: "att", 1: "intel"}
+
+
 @irdl_op_definition
 class InlineAsmOp(IRDLOperation):
     """
@@ -1365,6 +1367,79 @@ class InlineAsmOp(IRDLOperation):
             properties=props,
             result_types=[res_types],
         )
+
+    def print(self, printer: Printer) -> None:
+        if self.has_side_effects is not None:
+            printer.print_string(" has_side_effects")
+        if self.is_align_stack is not None:
+            printer.print_string(" is_align_stack")
+        if self.asm_dialect is not None and self.asm_dialect.value.data != 0:
+            kw = ASM_DIALECT_KEYWORDS[self.asm_dialect.value.data]
+            printer.print_string(f" asm_dialect = {kw}")
+        if self.tail_call_kind.data != TailCallKind.NONE:
+            printer.print_string(
+                f" tail_call_kind = <{self.tail_call_kind.data.value}>"
+            )
+        printer.print_string(" ")
+        printer.print_string_literal(self.asm_string.data)
+        printer.print_string(", ")
+        printer.print_string_literal(self.constraints.data)
+        if self.operands_:
+            printer.print_string(" ")
+            printer.print_list(self.operands_, printer.print_ssa_value)
+        printer.print_op_attributes(self.attributes)
+        printer.print_string(" : ")
+        printer.print_function_type(
+            [v.type for v in self.operands_],
+            [self.res.type] if self.res is not None else [],
+        )
+
+    @classmethod
+    def parse(cls, parser: Parser) -> InlineAsmOp:
+        has_side_effects = parser.parse_optional_keyword("has_side_effects") is not None
+        is_align_stack = parser.parse_optional_keyword("is_align_stack") is not None
+        asm_dialect = 0
+        if parser.parse_optional_keyword("asm_dialect") is not None:
+            parser.parse_punctuation("=")
+            kw = parser.parse_identifier()
+            for v, k in ASM_DIALECT_KEYWORDS.items():
+                if k == kw:
+                    asm_dialect = v
+                    break
+            else:
+                parser.raise_error(f"unknown asm dialect '{kw}'")
+        tail_call_kind = TailCallKindAttr(TailCallKind.NONE)
+        if parser.parse_optional_keyword("tail_call_kind") is not None:
+            parser.parse_punctuation("=")
+            parser.parse_punctuation("<")
+            kind_kw = parser.parse_identifier()
+            parser.parse_punctuation(">")
+            tail_call_kind = TailCallKindAttr(TailCallKind(kind_kw))
+        asm_string = parser.parse_str_literal()
+        parser.parse_punctuation(",")
+        constraints = parser.parse_str_literal()
+        operands: list[UnresolvedOperand] = []
+        first = parser.parse_optional_unresolved_operand()
+        if first is not None:
+            operands.append(first)
+            while parser.parse_optional_punctuation(",") is not None:
+                operands.append(parser.parse_unresolved_operand())
+        attrs = parser.parse_optional_attr_dict()
+        parser.parse_punctuation(":")
+        ft = parser.parse_function_type()
+        resolved = parser.resolve_operands(operands, ft.inputs.data, parser.pos)
+        op = cls(
+            asm_string,
+            constraints,
+            resolved,
+            list(ft.outputs.data),
+            asm_dialect=asm_dialect,
+            has_side_effects=has_side_effects,
+            is_align_stack=is_align_stack,
+            tail_call_kind=tail_call_kind,
+        )
+        op.attributes |= attrs
+        return op
 
 
 @irdl_op_definition
@@ -1711,7 +1786,9 @@ class UndefOp(IRDLOperation):
         super().__init__(result_types=[result_type])
 
 
-# TODO: custom assembly format https://github.com/xdslproject/xdsl/issues/5897
+_UNNAMED_ADDR_KEYWORDS: dict[int, str] = {1: "local_unnamed_addr", 2: "unnamed_addr"}
+
+
 @irdl_op_definition
 class GlobalOp(IRDLOperation):
     name = "llvm.mlir.global"
@@ -1789,6 +1866,98 @@ class GlobalOp(IRDLOperation):
             body = Region()
 
         super().__init__(properties=props, regions=(body,))
+
+    def print(self, printer: Printer) -> None:
+        printer.print_string(" ")
+        printer.print_string(self.linkage.linkage.data)
+        if self.thread_local_ is not None:
+            printer.print_string(" thread_local")
+        if self.unnamed_addr is not None:
+            kw = _UNNAMED_ADDR_KEYWORDS.get(self.unnamed_addr.value.data)
+            if kw is not None:
+                printer.print_string(f" {kw}")
+        if self.constant is not None:
+            printer.print_string(" constant")
+        printer.print_string(" ")
+        printer.print_symbol_name(self.sym_name.data)
+        printer.print_string("(")
+        if self.value is not None:
+            printer.print_attribute(self.value)
+        printer.print_string(")")
+        reserved = (
+            "global_type",
+            "sym_name",
+            "linkage",
+            "constant",
+            "thread_local_",
+            "unnamed_addr",
+            "value",
+        )
+        attrs = {
+            **{k: v for k, v in self.properties.items() if k not in reserved},
+            **self.attributes,
+        }
+        if attrs:
+            printer.print_string(" ")
+            printer.print_attr_dict(attrs)
+        printer.print_string(" : ")
+        printer.print_attribute(self.global_type)
+        if self.body.blocks:
+            printer.print_string(" ")
+            printer.print_region(self.body)
+
+    @classmethod
+    def parse(cls, parser: Parser) -> GlobalOp:
+        linkage_str: str | None = None
+        for linkage_option in _LINKAGE_OPTIONS:
+            if parser.parse_optional_keyword(linkage_option) is not None:
+                linkage_str = linkage_option
+                break
+        if linkage_str is None:
+            linkage_str = "external"
+        thread_local_ = parser.parse_optional_keyword("thread_local") is not None
+        unnamed_addr_val: int | None = None
+        if parser.parse_optional_keyword("local_unnamed_addr") is not None:
+            unnamed_addr_val = 1
+        elif parser.parse_optional_keyword("unnamed_addr") is not None:
+            unnamed_addr_val = 2
+        constant = parser.parse_optional_keyword("constant") is not None
+        sym_name = parser.parse_symbol_name()
+        parser.parse_punctuation("(")
+        value = None
+        if parser.parse_optional_punctuation(")") is None:
+            value = parser.parse_attribute()
+            parser.parse_punctuation(")")
+        attrs = parser.parse_optional_attr_dict()
+        parser.parse_punctuation(":")
+        global_type = parser.parse_type()
+        body = parser.parse_optional_region()
+        addr_space = 0
+        if (a := attrs.pop("addr_space", None)) is not None:
+            assert isinstance(a, IntegerAttr)
+            addr_space = a.value.data
+        alignment: int | None = None
+        if (a := attrs.pop("alignment", None)) is not None:
+            assert isinstance(a, IntegerAttr)
+            alignment = a.value.data
+        section = attrs.pop("section", None)
+        dso_local = attrs.pop("dso_local", None) is not None
+        op = cls(
+            global_type=global_type,
+            sym_name=sym_name,
+            linkage=linkage_str,
+            addr_space=addr_space,
+            constant=constant,
+            dso_local=dso_local,
+            thread_local_=thread_local_,
+            value=value,
+            alignment=alignment,
+            unnamed_addr=unnamed_addr_val,
+            section=cast(StringAttr, section) if section is not None else None,
+            body=body,
+        )
+        op.attributes |= attrs
+        return op
 
 
 @irdl_op_definition
@@ -2212,7 +2381,6 @@ class FastMathAttr(FastMathAttrBase):
     name = "llvm.fastmath"
 
 
-# TODO: custom assembly format https://github.com/xdslproject/xdsl/issues/5897
 @irdl_op_definition
 class CallIntrinsicOp(IRDLOperation):
     """
@@ -2250,6 +2418,45 @@ class CallIntrinsicOp(IRDLOperation):
             },
         )
 
+    def print(self, printer: Printer) -> None:
+        printer.print_string(" ")
+        printer.print_string_literal(self.intrin.data)
+        printer.print_string("(")
+        printer.print_list(self.args, printer.print_ssa_value)
+        printer.print_string(")")
+        reserved = ("intrin", "op_bundle_sizes", "operandSegmentSizes")
+        attrs = {
+            **{k: v for k, v in self.properties.items() if k not in reserved},
+            **self.attributes,
+        }
+        if attrs:
+            printer.print_string(" ")
+            printer.print_attr_dict(attrs)
+        printer.print_string(" : ")
+        printer.print_function_type(
+            [v.type for v in self.args],
+            [self.ress.type] if self.ress is not None else [],
+        )
+
+    @classmethod
+    def parse(cls, parser: Parser) -> CallIntrinsicOp:
+        intrin = parser.parse_str_literal()
+        args_unresolved = parser.parse_comma_separated_list(
+            parser.Delimiter.PAREN, parser.parse_unresolved_operand
+        )
+        attrs = parser.parse_optional_attr_dict()
+        parser.parse_punctuation(":")
+        ft = parser.parse_function_type()
+        args = parser.resolve_operands(args_unresolved, ft.inputs.data, parser.pos)
+        op = cls(
+            intrin,
+            args,
+            list(ft.outputs.data),
+            op_bundle_sizes=DenseArrayBase.from_list(i32, ()),
+        )
+        op.attributes |= attrs
+        return op
+
 
 class CallOpSymbolUserOpInterface(SymbolUserOpInterface):
     """
@@ -2277,7 +2484,6 @@ class CallOpSymbolUserOpInterface(SymbolUserOpInterface):
             )
 
 
-# TODO: custom assembly format https://github.com/xdslproject/xdsl/issues/5897
 @irdl_op_definition
 class CallOp(IRDLOperation):
     name = "llvm.call"
@@ -2338,6 +2544,130 @@ class CallOp(IRDLOperation):
             },
             result_types=op_result_type,
         )
+
+    def print(self, printer: Printer) -> None:
+        if self.CConv.convention.data != "ccc":
+            printer.print_string(f" {self.CConv.convention.data}")
+        if self.TailCallKind.data != TailCallKind.NONE:
+            printer.print_string(f" {self.TailCallKind.data.value}")
+        printer.print_string(" ")
+        if self.callee is not None:
+            printer.print_attribute(self.callee)
+            call_args = self.args
+        else:
+            printer.print_ssa_value(self.args[0])
+            call_args = self.args[1:]
+        printer.print_string("(")
+        printer.print_list(call_args, printer.print_ssa_value)
+        printer.print_string(")")
+        if self.var_callee_type is not None:
+            printer.print_string(" vararg(")
+            printer.print_attribute(self.var_callee_type)
+            printer.print_string(")")
+        reserved = (
+            "callee",
+            "var_callee_type",
+            "CConv",
+            "TailCallKind",
+            "fastmathFlags",
+            "op_bundle_sizes",
+            "operandSegmentSizes",
+        )
+        attrs = {
+            **{k: v for k, v in self.properties.items() if k not in reserved},
+            **self.attributes,
+        }
+        reserved_fastmath = self.fastmathFlags == FastMathAttr("none")
+        if not reserved_fastmath:
+            attrs["fastmathFlags"] = self.fastmathFlags
+        if attrs:
+            printer.print_string(" ")
+            printer.print_attr_dict(attrs)
+        printer.print_string(" : ")
+        if self.callee is None:
+            printer.print_attribute(self.args[0].type)
+            printer.print_string(", ")
+        ret_types = [] if self.returned is None else [self.returned.type]
+        printer.print_function_type([v.type for v in call_args], ret_types)
+
+    @classmethod
+    def parse(cls, parser: Parser) -> CallOp:
+        cconv = CallingConventionAttr("ccc")
+        for c in LLVM_CALLING_CONVS:
+            if c == "ccc":
+                continue
+            if parser.parse_optional_keyword(c) is not None:
+                cconv = CallingConventionAttr(c)
+                break
+        tail_call_kind = TailCallKindAttr(TailCallKind.NONE)
+        for kind in TailCallKind:
+            if kind == TailCallKind.NONE:
+                continue
+            if parser.parse_optional_keyword(kind.value) is not None:
+                tail_call_kind = TailCallKindAttr(kind)
+                break
+        callee: SymbolRefAttr | None = None
+        callee_ptr: UnresolvedOperand | None = None
+        if (sym_name := parser.parse_optional_symbol_name()) is not None:
+            callee = SymbolRefAttr(sym_name)
+        else:
+            callee_ptr = parser.parse_unresolved_operand()
+        args_unresolved = parser.parse_comma_separated_list(
+            parser.Delimiter.PAREN, parser.parse_unresolved_operand
+        )
+        var_callee_type: Attribute | None = None
+        if parser.parse_optional_keyword("vararg") is not None:
+            parser.parse_punctuation("(")
+            var_callee_type = parser.parse_type()
+            parser.parse_punctuation(")")
+        attrs = parser.parse_optional_attr_dict()
+        parser.parse_punctuation(":")
+        ptr_type: Attribute | None = None
+        if callee is None:
+            ptr_type = parser.parse_type()
+            parser.parse_punctuation(",")
+        ft = parser.parse_function_type()
+        fastmath = FastMathAttr("none")
+        if (fm := attrs.pop("fastmathFlags", None)) is not None:
+            assert isinstance(fm, FastMathAttr)
+            fastmath = fm
+        ret_types = list(ft.outputs.data)
+        return_type = ret_types[0] if ret_types else None
+        if callee is not None:
+            args = parser.resolve_operands(args_unresolved, ft.inputs.data, parser.pos)
+            op = cls(
+                callee,
+                *args,
+                return_type=return_type,
+                calling_convention=cconv,
+                fastmath=fastmath,
+            )
+        else:
+            assert callee_ptr is not None
+            assert ptr_type is not None
+            resolved_ptr = parser.resolve_operand(callee_ptr, ptr_type)
+            arg_types = ft.inputs.data
+            resolved_args = parser.resolve_operands(
+                args_unresolved, arg_types, parser.pos
+            )
+            result_types = [return_type] if return_type is not None else []
+            op = cls.create(
+                operands=[resolved_ptr, *resolved_args],
+                properties={
+                    "fastmathFlags": fastmath,
+                    "CConv": cconv,
+                    "op_bundle_sizes": DenseArrayBase.from_list(i32, ()),
+                    "operandSegmentSizes": DenseArrayBase.from_list(
+                        i32, [1 + len(resolved_args), 0]
+                    ),
+                },
+                result_types=result_types,
+            )
+        if var_callee_type is not None:
+            op.properties["var_callee_type"] = var_callee_type
+        op.properties["TailCallKind"] = tail_call_kind
+        op.attributes |= attrs
+        return op
 
 
 LLVMType = (
