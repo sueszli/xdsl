@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from types import EllipsisType
 from typing import ClassVar, cast
@@ -75,7 +75,7 @@ from xdsl.irdl import (
     traits_def,
     var_operand_def,
 )
-from xdsl.parser import AttrParser, Parser, UnresolvedOperand
+from xdsl.parser import AttrParser, Parser
 from xdsl.printer import Printer
 from xdsl.traits import (
     IsTerminator,
@@ -1317,6 +1317,11 @@ for the underlying semantics.
 """
 
 
+def _first_keyword(parser: Parser, keywords: Iterable[str]) -> str | None:
+    """Parse the first matching keyword from the given iterable, or `None`."""
+    return next((kw for kw in keywords if parser.parse_optional_keyword(kw)), None)
+
+
 @irdl_op_definition
 class InlineAsmOp(IRDLOperation):
     """
@@ -1915,17 +1920,11 @@ class GlobalOp(IRDLOperation):
 
     @classmethod
     def parse(cls, parser: Parser) -> GlobalOp:
-        linkage = next(
-            (l for l in _LINKAGE_OPTIONS if parser.parse_optional_keyword(l)),
-            "external",
-        )
+        linkage = _first_keyword(parser, _LINKAGE_OPTIONS) or "external"
         thread_local_ = parser.parse_optional_keyword("thread_local") is not None
+        unnamed_addr_kw = _first_keyword(parser, UNNAMED_ADDR_KEYWORDS.values())
         unnamed_addr_val = next(
-            (
-                v
-                for v, k in UNNAMED_ADDR_KEYWORDS.items()
-                if parser.parse_optional_keyword(k)
-            ),
+            (v for v, k in UNNAMED_ADDR_KEYWORDS.items() if k == unnamed_addr_kw),
             None,
         )
         constant = parser.parse_optional_keyword("constant") is not None
@@ -2592,31 +2591,17 @@ class CallOp(IRDLOperation):
     @classmethod
     def parse(cls, parser: Parser) -> CallOp:
         cconv = CallingConventionAttr(
-            next(
-                (
-                    c
-                    for c in LLVM_CALLING_CONVS - {"ccc"}
-                    if parser.parse_optional_keyword(c)
-                ),
-                "ccc",
-            )
+            _first_keyword(parser, LLVM_CALLING_CONVS - {"ccc"}) or "ccc"
+        )
+        tck_kw = _first_keyword(
+            parser, (k.value for k in TailCallKind if k != TailCallKind.NONE)
         )
         tail_call_kind = TailCallKindAttr(
-            next(
-                (
-                    k
-                    for k in TailCallKind
-                    if k != TailCallKind.NONE and parser.parse_optional_keyword(k.value)
-                ),
-                TailCallKind.NONE,
-            )
+            TailCallKind(tck_kw) if tck_kw else TailCallKind.NONE
         )
-        callee: SymbolRefAttr | None = None
-        callee_ptr: UnresolvedOperand | None = None
-        if (sym_name := parser.parse_optional_symbol_name()) is not None:
-            callee = SymbolRefAttr(sym_name)
-        else:
-            callee_ptr = parser.parse_unresolved_operand()
+        sym_name = parser.parse_optional_symbol_name()
+        callee = SymbolRefAttr(sym_name) if sym_name else None
+        callee_ptr = None if callee else parser.parse_unresolved_operand()
         args_unresolved = parser.parse_comma_separated_list(
             parser.Delimiter.PAREN, parser.parse_unresolved_operand
         )
