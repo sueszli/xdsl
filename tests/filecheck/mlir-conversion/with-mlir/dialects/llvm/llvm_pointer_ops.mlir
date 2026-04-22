@@ -15,7 +15,16 @@ builtin.module {
   %5 = llvm.load %4 : !llvm.ptr -> i64
   %8 = llvm.load %4 {alignment = 16 : i64} : !llvm.ptr -> i32
   %9 = llvm.load %4 atomic unordered {alignment = 32 : i64} : !llvm.ptr -> i32
+  %lm = llvm.load %4 atomic monotonic {alignment = 4 : i64} : !llvm.ptr -> i32
+  %la = llvm.load %4 atomic acquire {alignment = 4 : i64} : !llvm.ptr -> i32
+  %lr = llvm.load %4 atomic seq_cst {alignment = 4 : i64} : !llvm.ptr -> i32
   %ptr_int = llvm.ptrtoint %1 : !llvm.ptr to i64
+
+  %agg = "test.op"() : () -> !llvm.struct<(i32, !llvm.array<3 x i32>)>
+  %ev_field = llvm.extractvalue %agg[0] : !llvm.struct<(i32, !llvm.array<3 x i32>)>
+  %ev_arr = llvm.extractvalue %agg[1, 2] : !llvm.struct<(i32, !llvm.array<3 x i32>)>
+  %iv = llvm.insertvalue %ev_field, %agg[0] : !llvm.struct<(i32, !llvm.array<3 x i32>)>
+  %iv_arr = llvm.insertvalue %ev_field, %agg[1, 0] : !llvm.struct<(i32, !llvm.array<3 x i32>)>
 }
 
 // CHECK:       builtin.module {
@@ -32,5 +41,13 @@ builtin.module {
 // CHECK-NEXT:    [[STORED]] = llvm.load [[ALLOCA64]] : !llvm.ptr -> i64
 // CHECK-NEXT:    {{%.*}} = llvm.load [[ALLOCA64]] {alignment = 16 : i64} : !llvm.ptr -> i32
 // CHECK-NEXT:    {{%.*}} = llvm.load [[ALLOCA64]] atomic unordered {alignment = 32 : i64} : !llvm.ptr -> i32
+// CHECK-NEXT:    {{%.*}} = llvm.load [[ALLOCA64]] atomic monotonic {alignment = 4 : i64} : !llvm.ptr -> i32
+// CHECK-NEXT:    {{%.*}} = llvm.load [[ALLOCA64]] atomic acquire {alignment = 4 : i64} : !llvm.ptr -> i32
+// CHECK-NEXT:    {{%.*}} = llvm.load [[ALLOCA64]] atomic seq_cst {alignment = 4 : i64} : !llvm.ptr -> i32
 // CHECK-NEXT:    {{%.*}} = llvm.ptrtoint [[PTR]] : !llvm.ptr to i64
+// CHECK-NEXT:    [[AGG:%.*]] = "test.op"() : () -> !llvm.struct<(i32, !llvm.array<3 x i32>)>
+// CHECK-NEXT:    [[EVF:%.*]] = llvm.extractvalue [[AGG]][0] : !llvm.struct<(i32, !llvm.array<3 x i32>)>
+// CHECK-NEXT:    {{%.*}} = llvm.extractvalue [[AGG]][1, 2] : !llvm.struct<(i32, !llvm.array<3 x i32>)>
+// CHECK-NEXT:    {{%.*}} = llvm.insertvalue [[EVF]], [[AGG]][0] : !llvm.struct<(i32, !llvm.array<3 x i32>)>
+// CHECK-NEXT:    {{%.*}} = llvm.insertvalue [[EVF]], [[AGG]][1, 0] : !llvm.struct<(i32, !llvm.array<3 x i32>)>
 // CHECK-NEXT:  }
