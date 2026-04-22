@@ -1418,12 +1418,13 @@ class InlineAsmOp(IRDLOperation):
         asm_string = parser.parse_str_literal()
         parser.parse_punctuation(",")
         constraints = parser.parse_str_literal()
-        operands: list[UnresolvedOperand] = []
-        first = parser.parse_optional_unresolved_operand()
-        if first is not None:
-            operands.append(first)
-            while parser.parse_optional_punctuation(",") is not None:
-                operands.append(parser.parse_unresolved_operand())
+        operands = (
+            parser.parse_optional_undelimited_comma_separated_list(
+                parser.parse_optional_unresolved_operand,
+                parser.parse_unresolved_operand,
+            )
+            or []
+        )
         attrs = parser.parse_optional_attr_dict()
         parser.parse_punctuation(":")
         ft = parser.parse_function_type()
@@ -1884,22 +1885,18 @@ class GlobalOp(IRDLOperation):
         if self.value is not None:
             printer.print_attribute(self.value)
         printer.print_string(")")
-        reserved = (
-            "global_type",
-            "sym_name",
-            "linkage",
-            "constant",
-            "thread_local_",
-            "unnamed_addr",
-            "value",
+        printer.print_op_attributes(
+            self.properties | self.attributes,
+            reserved_attr_names=(
+                "global_type",
+                "sym_name",
+                "linkage",
+                "constant",
+                "thread_local_",
+                "unnamed_addr",
+                "value",
+            ),
         )
-        attrs = {
-            **{k: v for k, v in self.properties.items() if k not in reserved},
-            **self.attributes,
-        }
-        if attrs:
-            printer.print_string(" ")
-            printer.print_attr_dict(attrs)
         printer.print_string(" : ")
         printer.print_attribute(self.global_type)
         if self.body.blocks:
@@ -2424,14 +2421,10 @@ class CallIntrinsicOp(IRDLOperation):
         printer.print_string("(")
         printer.print_list(self.args, printer.print_ssa_value)
         printer.print_string(")")
-        reserved = ("intrin", "op_bundle_sizes", "operandSegmentSizes")
-        attrs = {
-            **{k: v for k, v in self.properties.items() if k not in reserved},
-            **self.attributes,
-        }
-        if attrs:
-            printer.print_string(" ")
-            printer.print_attr_dict(attrs)
+        printer.print_op_attributes(
+            self.properties | self.attributes,
+            reserved_attr_names=("intrin", "op_bundle_sizes", "operandSegmentSizes"),
+        )
         printer.print_string(" : ")
         printer.print_function_type(
             [v.type for v in self.args],
@@ -2564,25 +2557,20 @@ class CallOp(IRDLOperation):
             printer.print_string(" vararg(")
             printer.print_attribute(self.var_callee_type)
             printer.print_string(")")
-        reserved = (
+        reserved = [
             "callee",
             "var_callee_type",
             "CConv",
             "TailCallKind",
-            "fastmathFlags",
             "op_bundle_sizes",
             "operandSegmentSizes",
+        ]
+        if self.fastmathFlags == FastMathAttr("none"):
+            reserved.append("fastmathFlags")
+        printer.print_op_attributes(
+            self.properties | self.attributes,
+            reserved_attr_names=reserved,
         )
-        attrs = {
-            **{k: v for k, v in self.properties.items() if k not in reserved},
-            **self.attributes,
-        }
-        reserved_fastmath = self.fastmathFlags == FastMathAttr("none")
-        if not reserved_fastmath:
-            attrs["fastmathFlags"] = self.fastmathFlags
-        if attrs:
-            printer.print_string(" ")
-            printer.print_attr_dict(attrs)
         printer.print_string(" : ")
         if self.callee is None:
             printer.print_attribute(self.args[0].type)
