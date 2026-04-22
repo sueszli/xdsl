@@ -1382,13 +1382,10 @@ class InlineAsmOp(IRDLOperation):
             printer.print_string(" has_side_effects")
         if self.is_align_stack is not None:
             printer.print_string(" is_align_stack")
-        if self.asm_dialect is not None and self.asm_dialect.value.data != 0:
-            kw = ASM_DIALECT_KEYWORDS[self.asm_dialect.value.data]
-            printer.print_string(f" asm_dialect = {kw}")
-        if self.tail_call_kind.data != TailCallKind.NONE:
-            printer.print_string(
-                f" tail_call_kind = <{self.tail_call_kind.data.value}>"
-            )
+        if self.asm_dialect is not None and (v := self.asm_dialect.value.data) != 0:
+            printer.print_string(f" asm_dialect = {ASM_DIALECT_KEYWORDS[v]}")
+        if (tck := self.tail_call_kind.data) != TailCallKind.NONE:
+            printer.print_string(f" tail_call_kind = <{tck.value}>")
         printer.print_string(" ")
         printer.print_string_literal(self.asm_string.data)
         printer.print_string(", ")
@@ -1411,19 +1408,16 @@ class InlineAsmOp(IRDLOperation):
         if parser.parse_optional_keyword("asm_dialect") is not None:
             parser.parse_punctuation("=")
             kw = parser.parse_identifier()
-            for v, k in ASM_DIALECT_KEYWORDS.items():
-                if k == kw:
-                    asm_dialect = v
-                    break
-            else:
+            inverse = {k: v for v, k in ASM_DIALECT_KEYWORDS.items()}
+            if kw not in inverse:
                 parser.raise_error(f"unknown asm dialect '{kw}'")
+            asm_dialect = inverse[kw]
         tail_call_kind = TailCallKindAttr(TailCallKind.NONE)
         if parser.parse_optional_keyword("tail_call_kind") is not None:
             parser.parse_punctuation("=")
             parser.parse_punctuation("<")
-            kind_kw = parser.parse_identifier()
+            tail_call_kind = TailCallKindAttr(TailCallKind(parser.parse_identifier()))
             parser.parse_punctuation(">")
-            tail_call_kind = TailCallKindAttr(TailCallKind(kind_kw))
         asm_string = parser.parse_str_literal()
         parser.parse_punctuation(",")
         constraints = parser.parse_str_literal()
@@ -1437,11 +1431,10 @@ class InlineAsmOp(IRDLOperation):
         attrs = parser.parse_optional_attr_dict()
         parser.parse_punctuation(":")
         ft = parser.parse_function_type()
-        resolved = parser.resolve_operands(operands, ft.inputs.data, parser.pos)
         op = cls(
             asm_string,
             constraints,
-            resolved,
+            parser.resolve_operands(operands, ft.inputs.data, parser.pos),
             list(ft.outputs.data),
             asm_dialect=asm_dialect,
             has_side_effects=has_side_effects,
@@ -1890,10 +1883,10 @@ class GlobalOp(IRDLOperation):
         printer.print_string(self.linkage.linkage.data)
         if self.thread_local_ is not None:
             printer.print_string(" thread_local")
-        if self.unnamed_addr is not None:
-            kw = UNNAMED_ADDR_KEYWORDS.get(self.unnamed_addr.value.data)
-            if kw is not None:
-                printer.print_string(f" {kw}")
+        if self.unnamed_addr is not None and (
+            kw := UNNAMED_ADDR_KEYWORDS.get(self.unnamed_addr.value.data)
+        ):
+            printer.print_string(f" {kw}")
         if self.constant is not None:
             printer.print_string(" constant")
         printer.print_string(" ")
@@ -1922,19 +1915,19 @@ class GlobalOp(IRDLOperation):
 
     @classmethod
     def parse(cls, parser: Parser) -> GlobalOp:
-        linkage_str: str | None = None
-        for linkage_option in _LINKAGE_OPTIONS:
-            if parser.parse_optional_keyword(linkage_option) is not None:
-                linkage_str = linkage_option
-                break
-        if linkage_str is None:
-            linkage_str = "external"
+        linkage = next(
+            (l for l in _LINKAGE_OPTIONS if parser.parse_optional_keyword(l)),
+            "external",
+        )
         thread_local_ = parser.parse_optional_keyword("thread_local") is not None
-        unnamed_addr_val: int | None = None
-        if parser.parse_optional_keyword("local_unnamed_addr") is not None:
-            unnamed_addr_val = 1
-        elif parser.parse_optional_keyword("unnamed_addr") is not None:
-            unnamed_addr_val = 2
+        unnamed_addr_val = next(
+            (
+                v
+                for v, k in UNNAMED_ADDR_KEYWORDS.items()
+                if parser.parse_optional_keyword(k)
+            ),
+            None,
+        )
         constant = parser.parse_optional_keyword("constant") is not None
         sym_name = parser.parse_symbol_name()
         parser.parse_punctuation("(")
@@ -1943,39 +1936,33 @@ class GlobalOp(IRDLOperation):
             value = parser.parse_attribute()
             parser.parse_punctuation(")")
         attrs = parser.parse_optional_attr_dict()
-        global_type: Attribute | None = None
         if parser.parse_optional_punctuation(":") is not None:
             global_type = parser.parse_type()
         elif isinstance(value, StringAttr):
             global_type = LLVMArrayType(len(value.data), IntegerType(8))
         elif isinstance(value, TypedAttribute):
             global_type = value.get_type()
-        if global_type is None:
+        else:
             parser.raise_error("expected `:` followed by global type")
-        body = parser.parse_optional_region()
-        addr_space = 0
-        if (a := attrs.pop("addr_space", None)) is not None:
-            assert isinstance(a, IntegerAttr)
-            addr_space = a.value.data
-        alignment: int | None = None
-        if (a := attrs.pop("alignment", None)) is not None:
-            assert isinstance(a, IntegerAttr)
-            alignment = a.value.data
+        addr_space = attrs.pop("addr_space", IntegerAttr(0, 32))
+        alignment = attrs.pop("alignment", None)
         section = attrs.pop("section", None)
-        dso_local = attrs.pop("dso_local", None) is not None
+        assert isinstance(addr_space, IntegerAttr)
+        assert alignment is None or isinstance(alignment, IntegerAttr)
+        assert section is None or isinstance(section, StringAttr)
         op = cls(
             global_type=global_type,
             sym_name=sym_name,
-            linkage=linkage_str,
-            addr_space=addr_space,
+            linkage=linkage,
+            addr_space=addr_space.value.data,
             constant=constant,
-            dso_local=dso_local,
+            dso_local=attrs.pop("dso_local", None) is not None,
             thread_local_=thread_local_,
             value=value,
-            alignment=alignment,
+            alignment=alignment.value.data if alignment is not None else None,
             unnamed_addr=unnamed_addr_val,
-            section=cast(StringAttr, section) if section is not None else None,
-            body=body,
+            section=section,
+            body=parser.parse_optional_region(),
         )
         op.attributes |= attrs
         return op
@@ -2604,20 +2591,26 @@ class CallOp(IRDLOperation):
 
     @classmethod
     def parse(cls, parser: Parser) -> CallOp:
-        cconv = CallingConventionAttr("ccc")
-        for c in LLVM_CALLING_CONVS:
-            if c == "ccc":
-                continue
-            if parser.parse_optional_keyword(c) is not None:
-                cconv = CallingConventionAttr(c)
-                break
-        tail_call_kind = TailCallKindAttr(TailCallKind.NONE)
-        for kind in TailCallKind:
-            if kind == TailCallKind.NONE:
-                continue
-            if parser.parse_optional_keyword(kind.value) is not None:
-                tail_call_kind = TailCallKindAttr(kind)
-                break
+        cconv = CallingConventionAttr(
+            next(
+                (
+                    c
+                    for c in LLVM_CALLING_CONVS - {"ccc"}
+                    if parser.parse_optional_keyword(c)
+                ),
+                "ccc",
+            )
+        )
+        tail_call_kind = TailCallKindAttr(
+            next(
+                (
+                    k
+                    for k in TailCallKind
+                    if k != TailCallKind.NONE and parser.parse_optional_keyword(k.value)
+                ),
+                TailCallKind.NONE,
+            )
+        )
         callee: SymbolRefAttr | None = None
         callee_ptr: UnresolvedOperand | None = None
         if (sym_name := parser.parse_optional_symbol_name()) is not None:
@@ -2634,50 +2627,33 @@ class CallOp(IRDLOperation):
             parser.parse_punctuation(")")
         attrs = parser.parse_optional_attr_dict()
         parser.parse_punctuation(":")
-        ptr_type: Attribute | None = None
-        if callee is None:
-            ptr_type = parser.parse_type()
+        ptr_operands: list[SSAValue] = []
+        if callee_ptr is not None:
+            ptr_operands.append(parser.resolve_operand(callee_ptr, parser.parse_type()))
             parser.parse_punctuation(",")
         ft = parser.parse_function_type()
-        fastmath = FastMathAttr("none")
-        if (fm := attrs.pop("fastmathFlags", None)) is not None:
-            assert isinstance(fm, FastMathAttr)
-            fastmath = fm
-        ret_types = list(ft.outputs.data)
-        return_type = ret_types[0] if ret_types else None
+        fastmath = attrs.pop("fastmathFlags", FastMathAttr("none"))
+        assert isinstance(fastmath, FastMathAttr)
+        all_args = [
+            *ptr_operands,
+            *parser.resolve_operands(args_unresolved, ft.inputs.data, parser.pos),
+        ]
+        props: dict[str, Attribute] = {
+            "fastmathFlags": fastmath,
+            "CConv": cconv,
+            "TailCallKind": tail_call_kind,
+            "op_bundle_sizes": DenseArrayBase.from_list(i32, ()),
+            "operandSegmentSizes": DenseArrayBase.from_list(i32, [len(all_args), 0]),
+        }
         if callee is not None:
-            args = parser.resolve_operands(args_unresolved, ft.inputs.data, parser.pos)
-            op = cls(
-                callee,
-                *args,
-                return_type=return_type,
-                calling_convention=cconv,
-                fastmath=fastmath,
-            )
-        else:
-            assert callee_ptr is not None
-            assert ptr_type is not None
-            resolved_ptr = parser.resolve_operand(callee_ptr, ptr_type)
-            arg_types = ft.inputs.data
-            resolved_args = parser.resolve_operands(
-                args_unresolved, arg_types, parser.pos
-            )
-            result_types = [return_type] if return_type is not None else []
-            op = cls.create(
-                operands=[resolved_ptr, *resolved_args],
-                properties={
-                    "fastmathFlags": fastmath,
-                    "CConv": cconv,
-                    "op_bundle_sizes": DenseArrayBase.from_list(i32, ()),
-                    "operandSegmentSizes": DenseArrayBase.from_list(
-                        i32, [1 + len(resolved_args), 0]
-                    ),
-                },
-                result_types=result_types,
-            )
+            props["callee"] = callee
         if var_callee_type is not None:
-            op.properties["var_callee_type"] = var_callee_type
-        op.properties["TailCallKind"] = tail_call_kind
+            props["var_callee_type"] = var_callee_type
+        op = cls.create(
+            operands=all_args,
+            properties=props,
+            result_types=list(ft.outputs.data),
+        )
         op.attributes |= attrs
         return op
 
