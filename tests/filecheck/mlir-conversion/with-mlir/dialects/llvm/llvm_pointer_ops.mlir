@@ -1,4 +1,5 @@
 // RUN: MLIR_ROUNDTRIP
+// RUN: MLIR_GENERIC_ROUNDTRIP
 
 "builtin.module"() ({
   %0 = "arith.constant"() {"value" = 0 : i64} : () -> i64
