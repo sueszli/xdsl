@@ -1381,7 +1381,14 @@ class PtrToIntOp(IRDLOperation):
         super().__init__(operands=[arg], result_types=[int_type])
 
 
-_ATOMIC_ORDERING_KEYWORDS: dict[int, str] = {
+"""
+Mapping from LLVM atomic ordering integer values to their textual keyword form.
+
+See https://llvm.org/docs/LangRef.html#ordering for the semantics of each
+ordering, and https://mlir.llvm.org/docs/Dialects/LLVM/#atomic-ordering for the
+corresponding MLIR enum values.
+"""
+ATOMIC_ORDERING_KEYWORDS: dict[int, str] = {
     1: "unordered",
     2: "monotonic",
     4: "acquire",
@@ -1422,7 +1429,7 @@ class LoadOp(IRDLOperation):
         printer.print_string(" ")
         printer.print_ssa_value(self.ptr)
         if (ordering := self.ordering.value.data) != 0:
-            printer.print_string(f" atomic {_ATOMIC_ORDERING_KEYWORDS[ordering]}")
+            printer.print_string(f" atomic {ATOMIC_ORDERING_KEYWORDS[ordering]}")
         attrs = dict(self.attributes)
         if self.alignment is not None:
             attrs["alignment"] = self.alignment
@@ -1438,7 +1445,7 @@ class LoadOp(IRDLOperation):
         ordering = 0
         if parser.parse_optional_keyword("atomic") is not None:
             kw = parser.parse_identifier()
-            for v, k in _ATOMIC_ORDERING_KEYWORDS.items():
+            for v, k in ATOMIC_ORDERING_KEYWORDS.items():
                 if k == kw:
                     ordering = v
                     break
