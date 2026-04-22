@@ -361,11 +361,7 @@ builtin.module {
   }
 
   llvm.func @inline_asm(%arg0: i32) {
-    "llvm.inline_asm"(%arg0) <{
-      asm_string = "add $0, 1",
-      constraints = "r",
-      has_side_effects
-    }> : (i32) -> ()
+    llvm.inline_asm has_side_effects "add $0, 1", "r" %arg0 : (i32) -> ()
     llvm.return
   }
 
@@ -773,13 +769,7 @@ builtin.module {
 
   // forward_ref_caller calls forward_ref_callee which is defined AFTER it
   llvm.func @forward_ref_caller(%arg0: i32) -> i32 {
-    %0 = "llvm.call"(%arg0) <{
-      callee = @forward_ref_callee,
-      fastmathFlags = #llvm.fastmath<none>,
-      CConv = #llvm.cconv<ccc>,
-      TailCallKind = #llvm.tailcallkind<none>,
-      operandSegmentSizes = array<i32: 1, 0>
-    }> : (i32) -> i32
+    %0 = llvm.call @forward_ref_callee(%arg0) : (i32) -> i32
     llvm.return %0 : i32
   }
 
@@ -811,13 +801,7 @@ builtin.module {
   // CHECK-NEXT: }
 
   llvm.func @call_op(%arg0: i32) -> i32 {
-    %0 = "llvm.call"(%arg0) <{
-      callee = @helper,
-      fastmathFlags = #llvm.fastmath<nnan, ninf>,
-      CConv = #llvm.cconv<fastcc>,
-      TailCallKind = #llvm.tailcallkind<tail>,
-      operandSegmentSizes = array<i32: 1, 0>
-    }> : (i32) -> i32
+    %0 = llvm.call fastcc tail @helper(%arg0) {fastmathFlags = #llvm.fastmath<nnan, ninf>} : (i32) -> i32
     llvm.return %0 : i32
   }
 
@@ -883,7 +867,7 @@ builtin.module {
 
   llvm.func @addressof_op() {
     %0 = llvm.mlir.addressof @addressof_target : !llvm.ptr
-    "llvm.call"(%0) <{callee = @callee, fastmathFlags = #llvm.fastmath<>, CConv = #llvm.cconv<ccc>, TailCallKind = #llvm.tailcallkind<none>, operandSegmentSizes = array<i32: 1, 0>}> : (!llvm.ptr) -> ()
+    llvm.call @callee(%0) : (!llvm.ptr) -> ()
     llvm.return
   }
 

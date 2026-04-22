@@ -52,6 +52,7 @@ from xdsl.ir import (
     Region,
     SSAValue,
     TypeAttribute,
+    TypedAttribute,
 )
 from xdsl.irdl import (
     AnyAttr,
@@ -1306,6 +1307,14 @@ class TailCallKindAttr(EnumAttribute[TailCallKind]):
 
 
 ASM_DIALECT_KEYWORDS: dict[int, str] = {0: "att", 1: "intel"}
+"""
+Mapping from LLVM inline-assembly dialect integer values to their textual
+keyword form. See external
+[documentation](https://mlir.llvm.org/docs/Dialects/LLVM/#llvminline_asm-llvminlineasmop)
+for the MLIR op, and
+[LLVM LangRef](https://llvm.org/docs/LangRef.html#inline-assembler-expressions)
+for the underlying semantics.
+"""
 
 
 @irdl_op_definition
@@ -1787,7 +1796,15 @@ class UndefOp(IRDLOperation):
         super().__init__(result_types=[result_type])
 
 
-_UNNAMED_ADDR_KEYWORDS: dict[int, str] = {1: "local_unnamed_addr", 2: "unnamed_addr"}
+UNNAMED_ADDR_KEYWORDS: dict[int, str] = {1: "local_unnamed_addr", 2: "unnamed_addr"}
+"""
+Mapping from LLVM `unnamed_addr` integer values to their textual keyword form
+(0 = no keyword). See external
+[documentation](https://mlir.llvm.org/docs/Dialects/LLVM/#llvmmlirglobal-llvmglobalop)
+for the MLIR op, and
+[LLVM LangRef](https://llvm.org/docs/LangRef.html#global-variables) for the
+underlying semantics.
+"""
 
 
 @irdl_op_definition
@@ -1874,7 +1891,7 @@ class GlobalOp(IRDLOperation):
         if self.thread_local_ is not None:
             printer.print_string(" thread_local")
         if self.unnamed_addr is not None:
-            kw = _UNNAMED_ADDR_KEYWORDS.get(self.unnamed_addr.value.data)
+            kw = UNNAMED_ADDR_KEYWORDS.get(self.unnamed_addr.value.data)
             if kw is not None:
                 printer.print_string(f" {kw}")
         if self.constant is not None:
@@ -1926,8 +1943,15 @@ class GlobalOp(IRDLOperation):
             value = parser.parse_attribute()
             parser.parse_punctuation(")")
         attrs = parser.parse_optional_attr_dict()
-        parser.parse_punctuation(":")
-        global_type = parser.parse_type()
+        global_type: Attribute | None = None
+        if parser.parse_optional_punctuation(":") is not None:
+            global_type = parser.parse_type()
+        elif isinstance(value, StringAttr):
+            global_type = LLVMArrayType(len(value.data), IntegerType(8))
+        elif isinstance(value, TypedAttribute):
+            global_type = value.type
+        if global_type is None:
+            parser.raise_error("expected `:` followed by global type")
         body = parser.parse_optional_region()
         addr_space = 0
         if (a := attrs.pop("addr_space", None)) is not None:
