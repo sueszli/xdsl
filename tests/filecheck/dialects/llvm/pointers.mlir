@@ -6,6 +6,7 @@ builtin.module {
   %4 = llvm.alloca %0 x index {alignment = 32 : i64} : (i64) -> !llvm.ptr
   %6 = llvm.getelementptr %4[%0] : (!llvm.ptr, i64) -> !llvm.ptr, i32
   %7 = llvm.alloca %0 x i32 : (i64) -> !llvm.ptr
+  %ib = llvm.getelementptr inbounds %4[%0] : (!llvm.ptr, i64) -> !llvm.ptr, i32
   %2 = llvm.load %1 : !llvm.ptr -> i32
   %5 = llvm.load %4 : !llvm.ptr -> index
   %8 = llvm.load %4 {alignment = 16 : i64} : !llvm.ptr -> index
@@ -19,6 +20,7 @@ builtin.module {
 // CHECK-NEXT:    %3 = llvm.alloca %0 x index {alignment = 32 : i64} : (i64) -> !llvm.ptr
 // CHECK-NEXT:    %4 = llvm.getelementptr %3[%0] : (!llvm.ptr, i64) -> !llvm.ptr, i32
 // CHECK-NEXT:    %5 = llvm.alloca %0 x i32 : (i64) -> !llvm.ptr
+// CHECK-NEXT:    %ib = llvm.getelementptr inbounds %3[%0] : (!llvm.ptr, i64) -> !llvm.ptr, i32
 // CHECK-NEXT:    %6 = llvm.load %1 : !llvm.ptr -> i32
 // CHECK-NEXT:    %7 = llvm.load %3 : !llvm.ptr -> index
 // CHECK-NEXT:    %8 = llvm.load %3 {alignment = 16 : i64} : !llvm.ptr -> index

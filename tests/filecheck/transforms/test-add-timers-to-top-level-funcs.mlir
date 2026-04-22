@@ -18,7 +18,7 @@ builtin.module {
     %start = func.call @timer_start() : () -> f64
     "test.op"() : () -> ()
     %end = func.call @timer_end(%start) : (f64) -> f64
-    "llvm.store"(%end, %timers) <{"ordering" = 0 : i64}> : (f64, !llvm.ptr) -> ()
+    llvm.store %end, %timers : f64, !llvm.ptr
     func.return %arg0 : i32
   }
   func.func private @timer_start() -> f64

@@ -1171,6 +1171,8 @@ class GEPOp(IRDLOperation):
         )
 
     def print(self, printer: Printer) -> None:
+        if self.inbounds is not None:
+            printer.print_string(" inbounds")
         printer.print_string(" ")
         printer.print_ssa_value(self.ptr)
         print_dynamic_index_list(
@@ -1190,6 +1192,7 @@ class GEPOp(IRDLOperation):
 
     @classmethod
     def parse(cls, parser: Parser) -> GEPOp:
+        inbounds = parser.parse_optional_keyword("inbounds") is not None
         ptr = parser.parse_unresolved_operand()
         ssa_refs, const_indices = parse_dynamic_index_list_without_types(
             parser, GEP_USE_SSA_VAL
@@ -1206,6 +1209,7 @@ class GEPOp(IRDLOperation):
             elem_type,
             resolved[1:],
             result_type=cast(LLVMPointerType, ft.outputs.data[0]),
+            inbounds=inbounds,
         )
         op.attributes |= attrs
         return op

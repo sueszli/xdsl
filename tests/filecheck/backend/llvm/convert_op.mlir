@@ -377,7 +377,7 @@ builtin.module {
   // CHECK-NEXT: }
 
   llvm.func @alloca_op(%arg0: i32) {
-    %0 = "llvm.alloca"(%arg0) <{elem_type = i32}> : (i32) -> !llvm.ptr
+    %0 = llvm.alloca %arg0 x i32 : (i32) -> !llvm.ptr
     llvm.return
   }
 
@@ -389,7 +389,7 @@ builtin.module {
   // CHECK-NEXT: }
 
   llvm.func @alloca_op_with_alignment(%arg0: i32) {
-    %0 = "llvm.alloca"(%arg0) <{alignment = 32 : i64, elem_type = i32}> : (i32) -> !llvm.ptr
+    %0 = llvm.alloca %arg0 x i32 {alignment = 32 : i64} : (i32) -> !llvm.ptr
     llvm.return
   }
 
@@ -401,7 +401,7 @@ builtin.module {
   // CHECK-NEXT: }
 
   llvm.func @load_op(%arg0: !llvm.ptr) {
-    %0 = "llvm.load"(%arg0) <{ordering = 0 : i64}> : (!llvm.ptr) -> i32
+    %0 = llvm.load %arg0 : !llvm.ptr -> i32
     llvm.return
   }
 
@@ -413,7 +413,7 @@ builtin.module {
   // CHECK-NEXT: }
 
   llvm.func @load_op_with_alignment(%arg0: !llvm.ptr) {
-    %0 = "llvm.load"(%arg0) <{ordering = 0 : i64, alignment = 16 : i64}> : (!llvm.ptr) -> i32
+    %0 = llvm.load %arg0 {alignment = 16 : i64} : !llvm.ptr -> i32
     llvm.return
   }
 
@@ -425,7 +425,7 @@ builtin.module {
   // CHECK-NEXT: }
 
   llvm.func @store_op(%arg0: i32, %arg1: !llvm.ptr) {
-    "llvm.store"(%arg0, %arg1) <{ordering = 0 : i64}> : (i32, !llvm.ptr) -> ()
+    llvm.store %arg0, %arg1 : i32, !llvm.ptr
     llvm.return
   }
 
@@ -437,7 +437,7 @@ builtin.module {
   // CHECK-NEXT: }
 
   llvm.func @store_op_with_alignment(%arg0: i32, %arg1: !llvm.ptr) {
-    "llvm.store"(%arg0, %arg1) <{ordering = 0 : i64, alignment = 8 : i64}> : (i32, !llvm.ptr) -> ()
+    llvm.store %arg0, %arg1 {alignment = 8 : i64} : i32, !llvm.ptr
     llvm.return
   }
 
@@ -449,7 +449,7 @@ builtin.module {
   // CHECK-NEXT: }
 
   llvm.func @extract_op(%arg0: !llvm.struct<(i32, f32)>) {
-    %0 = "llvm.extractvalue"(%arg0) <{position = array<i64: 0>}> : (!llvm.struct<(i32, f32)>) -> i32
+    %0 = llvm.extractvalue %arg0[0] : !llvm.struct<(i32, f32)>
     llvm.return
   }
 
@@ -461,7 +461,7 @@ builtin.module {
   // CHECK-NEXT: }
 
   llvm.func @insert_op(%arg0: !llvm.struct<(i32, f32)>, %arg1: i32) {
-    %0 = "llvm.insertvalue"(%arg0, %arg1) <{position = array<i64: 0>}> : (!llvm.struct<(i32, f32)>, i32) -> !llvm.struct<(i32, f32)>
+    %0 = llvm.insertvalue %arg1, %arg0[0] : !llvm.struct<(i32, f32)>
     llvm.return
   }
 
@@ -536,11 +536,7 @@ builtin.module {
   //   int* result = &ptr[1][2];
   // }
   llvm.func @gep_constant(%arg0: !llvm.ptr) {
-    %0 = "llvm.getelementptr"(%arg0) <{
-      elem_type = !llvm.array<10 x i32>,
-      rawConstantIndices = array<i32: 1, 2>,
-      noWrapFlags = 0 : i32
-    }> : (!llvm.ptr) -> !llvm.ptr
+    %0 = llvm.getelementptr %arg0[1, 2] : (!llvm.ptr) -> !llvm.ptr, !llvm.array<10 x i32>
     llvm.return
   }
 
@@ -555,11 +551,7 @@ builtin.module {
   //   int* result = &ptr[index];
   // }
   llvm.func @gep_ssa(%arg0: !llvm.ptr, %arg1: i32) {
-    %0 = "llvm.getelementptr"(%arg0, %arg1) <{
-      elem_type = i32,
-      rawConstantIndices = array<i32: -2147483648>, // magic constant 0x80000000 (placeholder for ssa value)
-      noWrapFlags = 0 : i32
-    }> : (!llvm.ptr, i32) -> !llvm.ptr
+    %0 = llvm.getelementptr %arg0[%arg1] : (!llvm.ptr, i32) -> !llvm.ptr, i32
     llvm.return
   }
 
@@ -575,11 +567,7 @@ builtin.module {
   //   int* result = &ptr[1][i].field2[j];
   // }
   llvm.func @gep_mixed(%arg0: !llvm.ptr, %arg1: i32, %arg2: i32) {
-    %0 = "llvm.getelementptr"(%arg0, %arg1, %arg2) <{
-      elem_type = !llvm.array<10 x !llvm.struct<(i32, i32, !llvm.array<10 x i32>)>>,
-      rawConstantIndices = array<i32: 1, -2147483648, 2, -2147483648>,
-      noWrapFlags = 0 : i32
-    }> : (!llvm.ptr, i32, i32) -> !llvm.ptr
+    %0 = llvm.getelementptr %arg0[1, %arg1, 2, %arg2] : (!llvm.ptr, i32, i32) -> !llvm.ptr, !llvm.array<10 x !llvm.struct<(i32, i32, !llvm.array<10 x i32>)>>
     llvm.return
   }
 
@@ -595,12 +583,7 @@ builtin.module {
   //   int* result = &ptr[idx]; 
   // }
   llvm.func @gep_inbounds(%arg0: !llvm.ptr, %arg1: i32) {
-    %0 = "llvm.getelementptr"(%arg0, %arg1) <{
-      elem_type = i32,
-      rawConstantIndices = array<i32: -2147483648>,
-      inbounds,
-      noWrapFlags = 0 : i32
-    }> : (!llvm.ptr, i32) -> !llvm.ptr
+    %0 = llvm.getelementptr inbounds %arg0[%arg1] : (!llvm.ptr, i32) -> !llvm.ptr, i32
     llvm.return
   }
 
