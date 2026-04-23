@@ -1385,13 +1385,6 @@ class PtrToIntOp(IRDLOperation):
         super().__init__(operands=[arg], result_types=[int_type])
 
 
-"""
-Mapping from LLVM atomic ordering integer values to their textual keyword form.
-
-See https://llvm.org/docs/LangRef.html#ordering for the semantics of each
-ordering, and https://mlir.llvm.org/docs/Dialects/LLVM/#atomic-ordering for the
-corresponding MLIR enum values.
-"""
 ATOMIC_ORDERING_KEYWORDS: dict[int, str] = {
     1: "unordered",
     2: "monotonic",
@@ -1400,6 +1393,13 @@ ATOMIC_ORDERING_KEYWORDS: dict[int, str] = {
     6: "acq_rel",
     7: "seq_cst",
 }
+"""
+Mapping from LLVM atomic ordering integer values to their textual keyword form.
+
+See [LLVM LangRef](https://llvm.org/docs/LangRef.html#ordering) for the
+semantics of each ordering, and [MLIR LLVM dialect](https://mlir.llvm.org/docs/Dialects/LLVM/#atomic-ordering)
+for the corresponding MLIR enum values.
+"""
 
 
 @irdl_op_definition
