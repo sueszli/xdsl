@@ -1306,6 +1306,7 @@ class TailCallKindAttr(EnumAttribute[TailCallKind]):
             super().print_parameter(printer)
 
 
+ASM_DIALECT_KEYWORDS: dict[int, str] = {0: "att", 1: "intel"}
 """
 Mapping from LLVM inline-assembly dialect integer values to their textual
 keyword form. See external
@@ -1314,7 +1315,6 @@ for the MLIR op, and
 [LLVM LangRef](https://llvm.org/docs/LangRef.html#inline-assembler-expressions)
 for the underlying semantics.
 """
-ASM_DIALECT_KEYWORDS: dict[int, str] = {0: "att", 1: "intel"}
 
 
 def _first_keyword(parser: Parser, keywords: Iterable[str]) -> str | None:
@@ -1477,9 +1477,9 @@ ATOMIC_ORDERING_KEYWORDS: dict[int, str] = {
 """
 Mapping from LLVM atomic ordering integer values to their textual keyword form.
 
-See [LLVM LangRef](https://llvm.org/docs/LangRef.html#ordering) for the
-semantics of each ordering, and [MLIR LLVM dialect](https://mlir.llvm.org/docs/Dialects/LLVM/#atomic-ordering)
-for the corresponding MLIR enum values.
+See https://llvm.org/docs/LangRef.html#ordering for the semantics of each
+ordering, and https://mlir.llvm.org/docs/Dialects/LLVM/#atomic-ordering for the
+corresponding MLIR enum values.
 """
 
 
@@ -1794,6 +1794,7 @@ class UndefOp(IRDLOperation):
         super().__init__(result_types=[result_type])
 
 
+UNNAMED_ADDR_KEYWORDS: dict[int, str] = {1: "local_unnamed_addr", 2: "unnamed_addr"}
 """
 Mapping from LLVM `unnamed_addr` integer values to their textual keyword form
 (0 = no keyword). See external
@@ -1802,7 +1803,6 @@ for the MLIR op, and
 [LLVM LangRef](https://llvm.org/docs/LangRef.html#global-variables) for the
 underlying semantics.
 """
-UNNAMED_ADDR_KEYWORDS: dict[int, str] = {1: "local_unnamed_addr", 2: "unnamed_addr"}
 
 
 @irdl_op_definition
