@@ -144,3 +144,11 @@ func.func @inline_asm_unknown_dialect() {
 }
 
 // CHECK: unknown asm dialect 'bogus'
+
+// -----
+
+builtin.module {
+  llvm.mlir.global external @no_type_no_value() {addr_space = 0 : i32}
+}
+
+// CHECK: expected `:` followed by global type
