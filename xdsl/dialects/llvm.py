@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from types import EllipsisType
 from typing import ClassVar, cast
@@ -1317,11 +1317,6 @@ for the underlying semantics.
 """
 
 
-def _first_keyword(parser: Parser, keywords: Iterable[str]) -> str | None:
-    """Parse the first matching keyword from the given iterable, or `None`."""
-    return next((kw for kw in keywords if parser.parse_optional_keyword(kw)), None)
-
-
 @irdl_op_definition
 class InlineAsmOp(IRDLOperation):
     """
@@ -1920,9 +1915,11 @@ class GlobalOp(IRDLOperation):
 
     @classmethod
     def parse(cls, parser: Parser) -> GlobalOp:
-        linkage = _first_keyword(parser, _LINKAGE_OPTIONS) or "external"
+        linkage = parser.parse_optional_keyword_in(_LINKAGE_OPTIONS) or "external"
         thread_local_ = parser.parse_optional_keyword("thread_local") is not None
-        unnamed_addr_kw = _first_keyword(parser, UNNAMED_ADDR_KEYWORDS.values())
+        unnamed_addr_kw = parser.parse_optional_keyword_in(
+            UNNAMED_ADDR_KEYWORDS.values()
+        )
         unnamed_addr_val = next(
             (v for v, k in UNNAMED_ADDR_KEYWORDS.items() if k == unnamed_addr_kw),
             None,
@@ -2591,10 +2588,10 @@ class CallOp(IRDLOperation):
     @classmethod
     def parse(cls, parser: Parser) -> CallOp:
         cconv = CallingConventionAttr(
-            _first_keyword(parser, LLVM_CALLING_CONVS - {"ccc"}) or "ccc"
+            parser.parse_optional_keyword_in(LLVM_CALLING_CONVS - {"ccc"}) or "ccc"
         )
-        tck_kw = _first_keyword(
-            parser, (k.value for k in TailCallKind if k != TailCallKind.NONE)
+        tck_kw = parser.parse_optional_keyword_in(
+            {k.value for k in TailCallKind if k != TailCallKind.NONE}
         )
         tail_call_kind = TailCallKindAttr(
             TailCallKind(tck_kw) if tck_kw else TailCallKind.NONE
