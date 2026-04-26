@@ -96,3 +96,36 @@ llvm.func @_mlir_ciface_wrapped_function(i32, i32) attributes {llvm.emit_c_inter
 // CHECK-NEXT:    llvm.return
 // CHECK-NEXT:  }
 // CHECK-NEXT:  llvm.func @_mlir_ciface_wrapped_function(i32, i32) attributes {llvm.emit_c_interface, sym_visibility = "private"}
+
+llvm.func @float_callee(f32) -> f32
+llvm.func @variadic_callee(i32, ...) -> i32
+
+llvm.func @test_calls(%arg0: i32, %fptr: !llvm.ptr, %farg: f32) {
+  llvm.call @_mlir_ciface_wrapped_function(%arg0, %arg0) : (i32, i32) -> ()
+  %0 = llvm.call %fptr(%arg0) : !llvm.ptr, (i32) -> i32
+  llvm.call tail @external_func(%arg0) : (i32) -> ()
+  llvm.call fastcc @external_func(%arg0) : (i32) -> ()
+  %1 = llvm.call @variadic_callee(%arg0) vararg(!llvm.func<i32 (i32, ...)>) : (i32) -> i32
+  %2 = llvm.call @float_callee(%farg) {fastmathFlags = #llvm.fastmath<fast>} : (f32) -> f32
+  llvm.return
+}
+
+// CHECK: llvm.func @float_callee(f32) -> f32
+// CHECK-NEXT: llvm.func @variadic_callee(i32, ...) -> i32
+// CHECK-NEXT: llvm.func @test_calls(%{{.*}}: i32, %{{.*}}: !llvm.ptr, %{{.*}}: f32) {
+// CHECK-NEXT:   llvm.call @_mlir_ciface_wrapped_function(%{{.*}}, %{{.*}}) : (i32, i32) -> ()
+// CHECK-NEXT:   %{{.*}} = llvm.call %{{.*}}(%{{.*}}) : !llvm.ptr, (i32) -> i32
+// CHECK-NEXT:   llvm.call tail @external_func(%{{.*}}) : (i32) -> ()
+// CHECK-NEXT:   llvm.call fastcc @external_func(%{{.*}}) : (i32) -> ()
+// CHECK-NEXT:   %{{.*}} = llvm.call @variadic_callee(%{{.*}}) vararg(!llvm.func<i32 (i32, ...)>) : (i32) -> i32
+// CHECK-NEXT:   %{{.*}} = llvm.call @float_callee(%{{.*}}) {fastmathFlags = #llvm.fastmath<fast>} : (f32) -> f32
+// CHECK-NEXT:   llvm.return
+// CHECK-NEXT: }
+
+%ci0, %ci1 = "test.op"() : () -> (i64, i64)
+%ci2 = llvm.call_intrinsic "llvm.smax"(%ci0, %ci1) : (i64, i64) -> i64
+llvm.call_intrinsic "llvm.donothing"() : () -> ()
+
+// CHECK: %ci0, %ci1 = "test.op"() : () -> (i64, i64)
+// CHECK-NEXT: %ci2 = llvm.call_intrinsic "llvm.smax"(%ci0, %ci1) : (i64, i64) -> i64
+// CHECK-NEXT: llvm.call_intrinsic "llvm.donothing"() : () -> ()
