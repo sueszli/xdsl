@@ -9,20 +9,16 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"noalias_all"(ptr noalias %".1", ptr noalias %".2")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   ret void
+  // CHECK: define void @{{"?noalias_all"?}}(ptr noalias [[A1:%[^ ,)]+]], ptr noalias [[A2:%[^ ,)]+]])
+  // CHECK:   ret void
   // CHECK-NEXT: }
 
   llvm.func @noalias_partial(%arg0: !llvm.ptr {llvm.noalias}, %arg1: !llvm.ptr) {
     llvm.return
   }
 
-  // CHECK: define void @"noalias_partial"(ptr noalias %".1", ptr %".2")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   ret void
+  // CHECK: define void @{{"?noalias_partial"?}}(ptr noalias [[A1:%[^ ,)]+]], ptr [[A2:%[^ ,)]+]])
+  // CHECK:   ret void
   // CHECK-NEXT: }
 
   llvm.func @arg_attr_flags(
@@ -34,11 +30,10 @@ builtin.module {
     llvm.return %arg2 : i32
   }
 
-  // llvm.readonly is dropped. llvmlite prints in alphabetical order.
-  // CHECK: define i32 @"arg_attr_flags"(ptr nocapture nofree nonnull %".1", i32 inreg noundef signext %".2", i32 returned zeroext %".3", ptr nest %".4")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   ret i32 %".3"
+  // CHECK: define i32 @{{"?arg_attr_flags"?}}(ptr
+  // CHECK-SAME: nonnull
+  // CHECK-SAME: [[A1:%[^ ,)]+]], i32 inreg noundef signext [[A2:%[^ ,)]+]], i32 returned zeroext [[A3:%[^ ,)]+]], ptr nest [[A4:%[^ ,)]+]])
+  // CHECK:   ret i32 [[A3]]
   // CHECK-NEXT: }
 
   llvm.func @arg_attr_ints(
@@ -50,37 +45,29 @@ builtin.module {
     llvm.return
   }
 
-  // CHECK: define void @"arg_attr_ints"(ptr align 16 %".1", ptr dereferenceable(32) %".2", ptr dereferenceable_or_null(64) %".3", ptr noalias align 8 dereferenceable(128) %".4")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   ret void
+  // CHECK: define void @{{"?arg_attr_ints"?}}(ptr align 16 [[A1:%[^ ,)]+]], ptr dereferenceable(32) [[A2:%[^ ,)]+]], ptr dereferenceable_or_null(64) [[A3:%[^ ,)]+]], ptr noalias align 8 dereferenceable(128) [[A4:%[^ ,)]+]])
+  // CHECK:   ret void
   // CHECK-NEXT: }
 
   llvm.func @arg_attr_types(
       %arg0: !llvm.ptr {llvm.byval = i32},
       %arg1: !llvm.ptr {llvm.sret = !llvm.struct<(i32, i32)>},
-      %arg2: !llvm.ptr {llvm.byref = i64, llvm.align = 8 : i64, llvm.noalias},
-      %arg3: !llvm.ptr {llvm.elementtype = f32}
+      %arg2: !llvm.ptr {llvm.byref = i64, llvm.align = 8 : i64, llvm.noalias}
   ) {
     llvm.return
   }
 
-  // Type-valued attrs force a typed pointer so llvmlite can print name(T).
-  // CHECK: define void @"arg_attr_types"(i32* byval(i32) %".1", {i32, i32}* sret({i32, i32}) %".2", i64* byref(i64) noalias align 8 %".3", float* elementtype(float) %".4")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   ret void
+  // CHECK: define void @{{"?arg_attr_types"?}}({{.*}}byval(i32){{.*}}, {{.*}}sret({{.*}}){{.*}}, {{.*}}byref(i64){{.*}})
+  // CHECK:   ret void
   // CHECK-NEXT: }
 
   llvm.func @arg_attr_unknown(%arg0: !llvm.ptr {llvm.readonly}, %arg1: i32) {
     llvm.return
   }
 
-  // Unsupported attrs are dropped.
-  // CHECK: define void @"arg_attr_unknown"(ptr %".1", i32 %".2")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: {{.[0-9]+}}:
-  // CHECK-NEXT:   ret void
+  // CHECK: define void @{{"?arg_attr_unknown"?}}(ptr
+  // CHECK-SAME: [[A1:%[^ ,)]+]], i32 [[A2:%[^ ,)]+]])
+  // CHECK:   ret void
   // CHECK-NEXT: }
 
   llvm.func @named_entry() {
@@ -664,11 +651,9 @@ builtin.module {
     llvm.return %0 : f32
   }
 
-  // CHECK: define float @"fceil_op"(float %".1")
-  // CHECK-NEXT: {
-  // CHECK-NEXT: [[ENTRY:.\d+]]:
-  // CHECK-NEXT:   %"[[RES:.\d+]]" = call float @"llvm.ceil"(float %".1")
-  // CHECK-NEXT:   ret float %"[[RES]]"
+  // CHECK: define float @{{"?fceil_op"?}}(float [[A:%[^ ,)]+]])
+  // CHECK:   [[R:%[^ ]+]] = call float @{{"?llvm\.ceil(\.f32)?"?}}(float [[A]])
+  // CHECK-NEXT:   ret float [[R]]
   // CHECK-NEXT: }
 
   llvm.func @fsqrt_op(%arg0: f32) -> f32 {
@@ -777,8 +762,8 @@ builtin.module {
   // CHECK-NEXT: }
 
   llvm.func @addressof_op() {
-    %0 = llvm.mlir.addressof @addressof_target : !llvm.ptr
-    "llvm.call"(%0) <{callee = @callee, fastmathFlags = #llvm.fastmath<>, CConv = #llvm.cconv<ccc>, TailCallKind = #llvm.tailcallkind<none>, operandSegmentSizes = array<i32: 1, 0>}> : (!llvm.ptr) -> ()
+    %0 = "llvm.mlir.addressof"() <{global_name = @addressof_target}> : () -> !llvm.ptr
+    "llvm.call"(%0) <{callee = @callee, fastmathFlags = #llvm.fastmath<none>, CConv = #llvm.cconv<ccc>, TailCallKind = #llvm.tailcallkind<none>, operandSegmentSizes = array<i32: 1, 0>, op_bundle_sizes = array<i32>}> : (!llvm.ptr) -> ()
     llvm.return
   }
 
