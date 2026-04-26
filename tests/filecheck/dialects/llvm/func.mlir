@@ -96,3 +96,11 @@ llvm.func @_mlir_ciface_wrapped_function(i32, i32) attributes {llvm.emit_c_inter
 // CHECK-NEXT:    llvm.return
 // CHECK-NEXT:  }
 // CHECK-NEXT:  llvm.func @_mlir_ciface_wrapped_function(i32, i32) attributes {llvm.emit_c_interface, sym_visibility = "private"}
+
+%ci0, %ci1 = "test.op"() : () -> (i64, i64)
+%ci2 = llvm.call_intrinsic "llvm.smax"(%ci0, %ci1) : (i64, i64) -> i64
+llvm.call_intrinsic "llvm.donothing"() : () -> ()
+
+// CHECK: %ci0, %ci1 = "test.op"() : () -> (i64, i64)
+// CHECK-NEXT: %ci2 = llvm.call_intrinsic "llvm.smax"(%ci0, %ci1) : (i64, i64) -> i64
+// CHECK-NEXT: llvm.call_intrinsic "llvm.donothing"() : () -> ()

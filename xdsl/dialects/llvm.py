@@ -1990,6 +1990,41 @@ class CallIntrinsicOp(IRDLOperation):
             },
         )
 
+    def print(self, printer: Printer) -> None:
+        printer.print_string(" ")
+        printer.print_string_literal(self.intrin.data)
+        printer.print_string("(")
+        printer.print_list(self.args, printer.print_ssa_value)
+        printer.print_string(")")
+        printer.print_op_attributes(
+            self.properties | self.attributes,
+            reserved_attr_names=("intrin", "op_bundle_sizes", "operandSegmentSizes"),
+        )
+        printer.print_string(" : ")
+        printer.print_function_type(
+            [v.type for v in self.args],
+            [self.ress.type] if self.ress is not None else [],
+        )
+
+    @classmethod
+    def parse(cls, parser: Parser) -> CallIntrinsicOp:
+        intrin = parser.parse_str_literal()
+        args_unresolved = parser.parse_comma_separated_list(
+            parser.Delimiter.PAREN, parser.parse_unresolved_operand
+        )
+        attrs = parser.parse_optional_attr_dict()
+        parser.parse_punctuation(":")
+        ft = parser.parse_function_type()
+        args = parser.resolve_operands(args_unresolved, ft.inputs.data, parser.pos)
+        op = cls(
+            intrin,
+            args,
+            list(ft.outputs.data),
+            op_bundle_sizes=DenseArrayBase.from_list(i32, ()),
+        )
+        op.attributes |= attrs
+        return op
+
 
 @irdl_op_definition
 class CallOp(IRDLOperation):

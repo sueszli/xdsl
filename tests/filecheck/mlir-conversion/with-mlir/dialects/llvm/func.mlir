@@ -100,3 +100,13 @@ llvm.func @_mlir_ciface_wrapped_function(i32, i32) attributes {llvm.emit_c_inter
 // CHECK-NEXT:    llvm.return
 // CHECK-NEXT:  }
 // CHECK-NEXT:  llvm.func @_mlir_ciface_wrapped_function(i32, i32) attributes {llvm.emit_c_interface, sym_visibility = "private"}
+
+llvm.func @test_call_intrinsic(%arg0: i64, %fptr: !llvm.ptr) {
+  llvm.call_intrinsic "llvm.donothing"() : () -> ()
+  llvm.return
+}
+
+// CHECK: llvm.func @test_call_intrinsic(%{{.*}}: i64, %{{.*}}: !llvm.ptr) {
+// CHECK-NEXT:   llvm.call_intrinsic "llvm.donothing"() {{.*}}: () -> ()
+// CHECK-NEXT:   llvm.return
+// CHECK-NEXT: }
