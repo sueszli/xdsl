@@ -1472,9 +1472,9 @@ ATOMIC_ORDERING_KEYWORDS: dict[int, str] = {
 """
 Mapping from LLVM atomic ordering integer values to their textual keyword form.
 
-See https://llvm.org/docs/LangRef.html#ordering for the semantics of each
-ordering, and https://mlir.llvm.org/docs/Dialects/LLVM/#atomic-ordering for the
-corresponding MLIR enum values.
+See [LLVM LangRef](https://llvm.org/docs/LangRef.html#ordering) for the
+semantics of each ordering, and [MLIR LLVM dialect](https://mlir.llvm.org/docs/Dialects/LLVM/#atomic-ordering)
+for the corresponding MLIR enum values.
 """
 
 
