@@ -240,6 +240,7 @@ def _convert_call(
 def _convert_alloca(
     op: llvm.AllocaOp, builder: ir.IRBuilder, val_map: dict[SSAValue, ir.Value]
 ):
+    assert op.elem_type is not None
     alloca_instr = builder.alloca(convert_type(op.elem_type), size=val_map[op.size])
     if op.alignment:
         alloca_instr.align = op.alignment.value.data
