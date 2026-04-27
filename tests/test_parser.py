@@ -1379,3 +1379,44 @@ def test_parse_dimension_list(input: str, expected: list[int]):
 
     result = parser.parse_dimension_list()
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "a (] b",
+        "a [} b",
+        "a {) b",
+        "a ) b",
+        "a ] b",
+        "a } b",
+    ],
+)
+def test_unregistered_type_unbalanced_brackets(body: str):
+    """_raw_scan_balanced rejects mismatched bracket pairs."""
+    ctx = Context(allow_unregistered=True)
+    with pytest.raises(ParseError, match="Unbalanced"):
+        Parser(ctx, f"!unknowndialect.t<{body}>").parse_type()
+
+
+def test_unregistered_type_unterminated_string():
+    """_raw_scan_balanced rejects unterminated string literals."""
+    ctx = Context(allow_unregistered=True)
+    with pytest.raises(ParseError, match="Unterminated string literal"):
+        Parser(ctx, '!unknowndialect.t<"no end>').parse_type()
+
+
+def test_unregistered_type_unexpected_eof():
+    """_raw_scan_balanced rejects unexpected end of file."""
+    ctx = Context(allow_unregistered=True)
+    with pytest.raises(ParseError, match="end of file"):
+        Parser(ctx, "!unknowndialect.t<no close").parse_type()
+
+
+def test_unregistered_attr_name_rejected():
+    """An unknown attr name is rejected when allow_unregistered is False."""
+    ctx = Context(allow_unregistered=False)
+    ctx.load_dialect(Test)
+    with pytest.raises(ParseError, match="is not registered"):
+        parser = Parser(ctx, '"test.op"() : () -> !nonexistent.type<foo>')
+        parser.parse_optional_operation()

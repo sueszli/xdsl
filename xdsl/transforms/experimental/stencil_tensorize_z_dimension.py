@@ -21,7 +21,7 @@ from xdsl.dialects.builtin import (
 )
 from xdsl.dialects.experimental import dmp
 from xdsl.dialects.func import FuncOp
-from xdsl.dialects.linalg import FillOp
+from xdsl.dialects.linalg.ops import FillOp
 from xdsl.dialects.stencil import (
     AccessOp,
     AccessPattern,
