@@ -107,6 +107,6 @@ llvm.func @test_call_intrinsic(%arg0: i64, %fptr: !llvm.ptr) {
 }
 
 // CHECK: llvm.func @test_call_intrinsic(%{{.*}}: i64, %{{.*}}: !llvm.ptr) {
-// CHECK-NEXT:   llvm.call_intrinsic "llvm.donothing"() {{.*}}: () -> ()
+// CHECK-NEXT:   llvm.call_intrinsic "llvm.donothing"() : () -> ()
 // CHECK-NEXT:   llvm.return
 // CHECK-NEXT: }

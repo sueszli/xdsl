@@ -1998,8 +1998,16 @@ class CallIntrinsicOp(IRDLOperation):
         printer.print_string(")")
         printer.print_op_attributes(
             self.properties | self.attributes,
-            reserved_attr_names=("intrin", "op_bundle_sizes", "operandSegmentSizes"),
+            reserved_attr_names=(
+                "intrin",
+                "fastmathFlags",
+                "op_bundle_sizes",
+                "operandSegmentSizes",
+            ),
         )
+        if self.fastmathFlags is not None and self.fastmathFlags.data:
+            printer.print_string(" ")
+            printer.print_attribute(self.fastmathFlags)
         printer.print_string(" : ")
         printer.print_function_type(
             [v.type for v in self.args],
