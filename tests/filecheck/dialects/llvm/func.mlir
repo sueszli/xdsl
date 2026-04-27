@@ -85,14 +85,39 @@ llvm.func @func_with_attrs() attributes {hello = "world"} {
 // CHECK-NEXT: }
 
 llvm.func private @wrapped_function(%arg0: i32, %arg1: i32) attributes {llvm.emit_c_interface, sym_visibility = "private"} {
-   "llvm.call"(%arg0, %arg1) <{CConv = #llvm.cconv<ccc>, TailCallKind = #llvm.tailcallkind<none>, callee = @_mlir_ciface_wrapped_function, fastmathFlags = #llvm.fastmath<none>, op_bundle_sizes = array<i32>, operandSegmentSizes = array<i32: 2, 0>}> : (i32, i32) -> ()
+   llvm.call @_mlir_ciface_wrapped_function(%arg0, %arg1) : (i32, i32) -> ()
    llvm.return
 }
 
 llvm.func @_mlir_ciface_wrapped_function(i32, i32) attributes {llvm.emit_c_interface, sym_visibility = "private"}
 
 // CHECK:  llvm.func private @wrapped_function(%{{.*}}: i32, %{{.*}}: i32) attributes {llvm.emit_c_interface, sym_visibility = "private"} {
-// CHECK-NEXT:    "llvm.call"(%{{.*}}, %{{.*}}) <{CConv = #llvm.cconv<ccc>, TailCallKind = #llvm.tailcallkind<none>, callee = @_mlir_ciface_wrapped_function, fastmathFlags = #llvm.fastmath<none>, op_bundle_sizes = array<i32>, operandSegmentSizes = array<i32: 2, 0>}> : (i32, i32) -> ()
+// CHECK-NEXT:    llvm.call @_mlir_ciface_wrapped_function(%{{.*}}, %{{.*}}) : (i32, i32) -> ()
 // CHECK-NEXT:    llvm.return
 // CHECK-NEXT:  }
 // CHECK-NEXT:  llvm.func @_mlir_ciface_wrapped_function(i32, i32) attributes {llvm.emit_c_interface, sym_visibility = "private"}
+
+llvm.func @float_callee(f32) -> f32
+llvm.func @variadic_callee(i32, ...) -> i32
+
+llvm.func @test_calls(%arg0: i32, %fptr: !llvm.ptr, %farg: f32) {
+  llvm.call @_mlir_ciface_wrapped_function(%arg0, %arg0) : (i32, i32) -> ()
+  %0 = llvm.call %fptr(%arg0) : !llvm.ptr, (i32) -> i32
+  llvm.call tail @external_func(%arg0) : (i32) -> ()
+  llvm.call fastcc @external_func(%arg0) : (i32) -> ()
+  %1 = llvm.call @variadic_callee(%arg0) vararg(!llvm.func<i32 (i32, ...)>) : (i32) -> i32
+  %2 = llvm.call @float_callee(%farg) {fastmathFlags = #llvm.fastmath<fast>} : (f32) -> f32
+  llvm.return
+}
+
+// CHECK: llvm.func @float_callee(f32) -> f32
+// CHECK-NEXT: llvm.func @variadic_callee(i32, ...) -> i32
+// CHECK-NEXT: llvm.func @test_calls(%{{.*}}: i32, %{{.*}}: !llvm.ptr, %{{.*}}: f32) {
+// CHECK-NEXT:   llvm.call @_mlir_ciface_wrapped_function(%{{.*}}, %{{.*}}) : (i32, i32) -> ()
+// CHECK-NEXT:   %{{.*}} = llvm.call %{{.*}}(%{{.*}}) : !llvm.ptr, (i32) -> i32
+// CHECK-NEXT:   llvm.call tail @external_func(%{{.*}}) : (i32) -> ()
+// CHECK-NEXT:   llvm.call fastcc @external_func(%{{.*}}) : (i32) -> ()
+// CHECK-NEXT:   %{{.*}} = llvm.call @variadic_callee(%{{.*}}) vararg(!llvm.func<i32 (i32, ...)>) : (i32) -> i32
+// CHECK-NEXT:   %{{.*}} = llvm.call @float_callee(%{{.*}}) {fastmathFlags = #llvm.fastmath<fast>} : (f32) -> f32
+// CHECK-NEXT:   llvm.return
+// CHECK-NEXT: }
