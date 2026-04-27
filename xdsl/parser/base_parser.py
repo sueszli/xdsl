@@ -267,16 +267,16 @@ class BaseParser(GenericParser[MLIRTokenKind]):
             and self._current_token.text in keywords
         ):
             keyword = self._current_token.text
-            self._consume_token(MLIRTokenKind.BARE_IDENT)
+            self._consume_token()
             return keyword
 
     def parse_keyword_in(self, keywords: Collection[str], context_msg: str = "") -> str:
         """Parse an identifier that must match one of the given keywords."""
-        result = self.parse_optional_keyword_in(keywords)
-        if result is not None:
-            return result
         expected = ", ".join(f"'{k}'" for k in sorted(keywords))
-        self.raise_error(f"Expected one of {expected}" + context_msg)
+        return self.expect(
+            lambda: self.parse_optional_keyword_in(keywords),
+            f"Expected one of {expected}" + context_msg,
+        )
 
     def parse_keyword(self, keyword: str, context_msg: str = "") -> str:
         """Parse a specific identifier."""
