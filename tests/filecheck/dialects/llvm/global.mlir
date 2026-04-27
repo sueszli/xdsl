@@ -29,6 +29,6 @@ builtin.module {
 // CHECK-NEXT:   }
 // CHECK-NEXT:   llvm.mlir.global internal constant @str_inferred("test") {addr_space = 0 : i32} : !llvm.array<4 x i8>
 // CHECK-NEXT:   llvm.mlir.global private @val_inferred(42 : i32) {addr_space = 0 : i32} : i32
-// CHECK-NEXT:   %1 = "llvm.mlir.addressof"() <{global_name = @str0}> : () -> !llvm.ptr
-// CHECK-NEXT:   %2 = "llvm.getelementptr"(%1) <{elem_type = !llvm.array<13 x i8>, noWrapFlags = 0 : i32, rawConstantIndices = array<i32: 0, 0>}> : (!llvm.ptr) -> !llvm.ptr
+// CHECK-NEXT:   %1 = llvm.mlir.addressof @str0 : !llvm.ptr
+// CHECK-NEXT:   %2 = llvm.getelementptr %1[0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.array<13 x i8>
 // CHECK-NEXT: }
