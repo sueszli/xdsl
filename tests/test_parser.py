@@ -1454,3 +1454,36 @@ def test_slash_punctuation_in_registered_attr():
     with StringIO() as io:
         Printer(io).print_attribute(attr)
         assert io.getvalue() == "#test_slash.attr</>"
+
+
+def test_parse_optional_keyword_in_matching():
+    parser = Parser(Context(), "fastcc remaining")
+    result = parser.parse_optional_keyword_in({"fastcc", "ccc", "tailcc"})
+    assert result == "fastcc"
+    assert parser.parse_optional_identifier() == "remaining"
+
+
+def test_parse_optional_keyword_in_non_matching():
+    parser = Parser(Context(), "other remaining")
+    result = parser.parse_optional_keyword_in({"fastcc", "ccc"})
+    assert result is None
+    assert parser.parse_optional_identifier() == "other"
+
+
+def test_parse_optional_keyword_in_non_identifier():
+    parser = Parser(Context(), "42 remaining")
+    result = parser.parse_optional_keyword_in({"fastcc"})
+    assert result is None
+
+
+def test_parse_keyword_in_matching():
+    parser = Parser(Context(), "fastcc remaining")
+    result = parser.parse_keyword_in({"fastcc", "ccc", "tailcc"})
+    assert result == "fastcc"
+    assert parser.parse_optional_identifier() == "remaining"
+
+
+def test_parse_keyword_in_non_matching():
+    parser = Parser(Context(), "other remaining")
+    with pytest.raises(ParseError, match="Expected one of"):
+        parser.parse_keyword_in({"fastcc", "ccc"})
