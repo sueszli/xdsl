@@ -108,9 +108,9 @@ llvm.func @test_calls(%arg0: i64, %fptr: !llvm.ptr) {
   llvm.return
 }
 
-// CHECK: llvm.func @test_calls(%{{.*}}: i64, %{{.*}}: !llvm.ptr) {
-// CHECK-NEXT:   %{{.*}} = llvm.call %{{.*}}(%{{.*}}) : !llvm.ptr, (i64) -> i64
-// CHECK-NEXT:   llvm.call tail @external_func(%{{.*}}) : (i64) -> ()
-// CHECK-NEXT:   llvm.call fastcc @external_func(%{{.*}}) : (i64) -> ()
+// CHECK: llvm.func @test_calls(%[[ARG0:.*]]: i64, %[[FPTR:.*]]: !llvm.ptr) {
+// CHECK-NEXT:   %[[V0:.*]] = llvm.call %[[FPTR]](%[[ARG0]]) : !llvm.ptr, (i64) -> i64
+// CHECK-NEXT:   llvm.call tail @external_func(%[[ARG0]]) : (i64) -> ()
+// CHECK-NEXT:   llvm.call fastcc @external_func(%[[ARG0]]) : (i64) -> ()
 // CHECK-NEXT:   llvm.return
 // CHECK-NEXT: }
