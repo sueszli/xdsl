@@ -2339,6 +2339,100 @@ class CallOp(IRDLOperation):
             result_types=op_result_type,
         )
 
+    def print(self, printer: Printer) -> None:
+        if self.CConv.convention.data != "ccc":
+            printer.print_string(f" {self.CConv.convention.data}")
+        if self.TailCallKind.data != TailCallKind.NONE:
+            printer.print_string(f" {self.TailCallKind.data.value}")
+        printer.print_string(" ")
+        if self.callee is not None:
+            printer.print_attribute(self.callee)
+            call_args = self.args
+        else:
+            printer.print_ssa_value(self.args[0])
+            call_args = self.args[1:]
+        printer.print_string("(")
+        printer.print_list(call_args, printer.print_ssa_value)
+        printer.print_string(")")
+        if self.var_callee_type is not None:
+            printer.print_string(" vararg(")
+            printer.print_attribute(self.var_callee_type)
+            printer.print_string(")")
+        reserved = [
+            "callee",
+            "var_callee_type",
+            "CConv",
+            "TailCallKind",
+            "op_bundle_sizes",
+            "operandSegmentSizes",
+        ]
+        if self.fastmathFlags == FastMathAttr("none"):
+            reserved.append("fastmathFlags")
+        printer.print_op_attributes(
+            self.properties | self.attributes,
+            reserved_attr_names=reserved,
+        )
+        printer.print_string(" : ")
+        if self.callee is None:
+            printer.print_attribute(self.args[0].type)
+            printer.print_string(", ")
+        ret_types = [] if self.returned is None else [self.returned.type]
+        printer.print_function_type([v.type for v in call_args], ret_types)
+
+    @classmethod
+    def parse(cls, parser: Parser) -> CallOp:
+        cconv = CallingConventionAttr(
+            parser.parse_optional_keyword_in(LLVM_CALLING_CONVS - {"ccc"}) or "ccc"
+        )
+        tck_kw = parser.parse_optional_keyword_in(
+            {k.value for k in TailCallKind if k != TailCallKind.NONE}
+        )
+        tail_call_kind = TailCallKindAttr(
+            TailCallKind(tck_kw) if tck_kw else TailCallKind.NONE
+        )
+        sym_name = parser.parse_optional_symbol_name()
+        callee = SymbolRefAttr(sym_name) if sym_name else None
+        callee_ptr = None if callee else parser.parse_unresolved_operand()
+        args_unresolved = parser.parse_comma_separated_list(
+            parser.Delimiter.PAREN, parser.parse_unresolved_operand
+        )
+        var_callee_type: Attribute | None = None
+        if parser.parse_optional_keyword("vararg") is not None:
+            parser.parse_punctuation("(")
+            var_callee_type = parser.parse_type()
+            parser.parse_punctuation(")")
+        attrs = parser.parse_optional_attr_dict()
+        parser.parse_punctuation(":")
+        ptr_operands: list[SSAValue] = []
+        if callee_ptr is not None:
+            ptr_operands.append(parser.resolve_operand(callee_ptr, parser.parse_type()))
+            parser.parse_punctuation(",")
+        ft = parser.parse_function_type()
+        fastmath = attrs.pop("fastmathFlags", FastMathAttr("none"))
+        assert isinstance(fastmath, FastMathAttr)
+        all_args = [
+            *ptr_operands,
+            *parser.resolve_operands(args_unresolved, ft.inputs.data, parser.pos),
+        ]
+        props: dict[str, Attribute] = {
+            "fastmathFlags": fastmath,
+            "CConv": cconv,
+            "TailCallKind": tail_call_kind,
+            "op_bundle_sizes": DenseArrayBase.from_list(i32, ()),
+            "operandSegmentSizes": DenseArrayBase.from_list(i32, [len(all_args), 0]),
+        }
+        if callee is not None:
+            props["callee"] = callee
+        if var_callee_type is not None:
+            props["var_callee_type"] = var_callee_type
+        op = cls.create(
+            operands=all_args,
+            properties=props,
+            result_types=list(ft.outputs.data),
+        )
+        op.attributes |= attrs
+        return op
+
 
 LLVMType = (
     LLVMStructType | LLVMPointerType | LLVMArrayType | LLVMVoidType | LLVMFunctionType
