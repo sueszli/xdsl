@@ -52,6 +52,7 @@ from xdsl.ir import (
     Region,
     SSAValue,
     TypeAttribute,
+    TypedAttribute,
 )
 from xdsl.irdl import (
     AnyAttr,
@@ -1801,7 +1802,17 @@ class UndefOp(IRDLOperation):
         super().__init__(result_types=[result_type])
 
 
-# TODO: custom assembly format https://github.com/xdslproject/xdsl/issues/5897
+UNNAMED_ADDR_KEYWORDS: dict[int, str] = {1: "local_unnamed_addr", 2: "unnamed_addr"}
+"""
+Mapping from LLVM `unnamed_addr` integer values to their textual keyword form
+(0 = no keyword). See external
+[documentation](https://mlir.llvm.org/docs/Dialects/LLVM/#llvmmlirglobal-llvmglobalop)
+for the MLIR op, and
+[LLVM LangRef](https://llvm.org/docs/LangRef.html#global-variables) for the
+underlying semantics.
+"""
+
+
 @irdl_op_definition
 class GlobalOp(IRDLOperation):
     name = "llvm.mlir.global"
@@ -1879,6 +1890,91 @@ class GlobalOp(IRDLOperation):
             body = Region()
 
         super().__init__(properties=props, regions=(body,))
+
+    def print(self, printer: Printer) -> None:
+        printer.print_string(" ")
+        printer.print_string(self.linkage.linkage.data)
+        if self.thread_local_ is not None:
+            printer.print_string(" thread_local")
+        if self.unnamed_addr is not None and (
+            kw := UNNAMED_ADDR_KEYWORDS.get(self.unnamed_addr.value.data)
+        ):
+            printer.print_string(f" {kw}")
+        if self.constant is not None:
+            printer.print_string(" constant")
+        printer.print_string(" ")
+        printer.print_symbol_name(self.sym_name.data)
+        printer.print_string("(")
+        if self.value is not None:
+            printer.print_attribute(self.value)
+        printer.print_string(")")
+        printer.print_op_attributes(
+            self.properties | self.attributes,
+            reserved_attr_names=(
+                "global_type",
+                "sym_name",
+                "linkage",
+                "constant",
+                "thread_local_",
+                "unnamed_addr",
+                "value",
+            ),
+        )
+        printer.print_string(" : ")
+        printer.print_attribute(self.global_type)
+        if self.body.blocks:
+            printer.print_string(" ")
+            printer.print_region(self.body)
+
+    @classmethod
+    def parse(cls, parser: Parser) -> GlobalOp:
+        linkage = parser.parse_optional_keyword_in(_LINKAGE_OPTIONS) or "external"
+        thread_local_ = parser.parse_optional_keyword("thread_local") is not None
+        unnamed_addr_kw = parser.parse_optional_keyword_in(
+            UNNAMED_ADDR_KEYWORDS.values()
+        )
+        unnamed_addr_val = next(
+            (v for v, k in UNNAMED_ADDR_KEYWORDS.items() if k == unnamed_addr_kw),
+            None,
+        )
+        constant = parser.parse_optional_keyword("constant") is not None
+        sym_name = parser.parse_symbol_name()
+        parser.parse_punctuation("(")
+        value = None
+        if parser.parse_optional_punctuation(")") is None:
+            value = parser.parse_attribute()
+            parser.parse_punctuation(")")
+        attrs = parser.parse_optional_attr_dict()
+        if parser.parse_optional_punctuation(":") is not None:
+            global_type = parser.parse_type()
+        elif isinstance(value, StringAttr):
+            global_type = LLVMArrayType(len(value.data), IntegerType(8))
+        elif isinstance(value, TypedAttribute):
+            global_type = value.get_type()
+        else:
+            parser.raise_error("expected `:` followed by global type")
+        addr_space = attrs.pop("addr_space", IntegerAttr(0, 32))
+        alignment = attrs.pop("alignment", None)
+        section = attrs.pop("section", None)
+        assert isinstance(addr_space, IntegerAttr)
+        assert alignment is None or isinstance(alignment, IntegerAttr)
+        assert section is None or isinstance(section, StringAttr)
+        op = cls(
+            global_type=global_type,
+            sym_name=sym_name,
+            linkage=linkage,
+            addr_space=addr_space.value.data,
+            constant=constant,
+            dso_local=attrs.pop("dso_local", None) is not None,
+            thread_local_=thread_local_,
+            value=value,
+            alignment=alignment.value.data if alignment is not None else None,
+            unnamed_addr=unnamed_addr_val,
+            section=section,
+            body=parser.parse_optional_region(),
+        )
+        op.attributes |= attrs
+        return op
 
 
 @irdl_op_definition
