@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
 
-from bench_utils import Benchmark, profile
-
 from xdsl.backend.llvm.convert import convert_module
 from xdsl.context import Context
 from xdsl.dialects.builtin import Builtin, ModuleOp
@@ -38,6 +36,8 @@ class LLVMBackend:
 
 
 if __name__ == "__main__":
+    from bench_utils import Benchmark, profile
+
     BACKEND = LLVMBackend()
     profile(
         {
