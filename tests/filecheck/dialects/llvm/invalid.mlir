@@ -134,3 +134,13 @@ func.func @insertvalue_into_scalar() {
 }
 
 // CHECK: cannot index into i32
+
+// -----
+
+func.func @inline_asm_unknown_dialect() {
+  %v = "test.op"() : () -> i32
+  llvm.inline_asm asm_dialect = bogus "nop", "" %v : (i32) -> ()
+  func.return
+}
+
+// CHECK: Expected one of 'att', 'intel' after 'asm_dialect ='
