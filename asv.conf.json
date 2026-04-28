@@ -94,6 +94,11 @@
     // new environments.  A value of ``null`` means that the variable
     // will not be set for the current combination.
     //
+    "matrix": {
+        "req": {
+            "llvmlite": [""]
+        }
+    },
     // "matrix": {
     //     "req": {
     //         "numpy": ["1.6", "1.7"],
