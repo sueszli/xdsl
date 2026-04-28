@@ -811,13 +811,7 @@ builtin.module {
   // CHECK-NEXT: }
 
   llvm.func @call_op(%arg0: i32) -> i32 {
-    %0 = "llvm.call"(%arg0) <{
-      callee = @helper,
-      fastmathFlags = #llvm.fastmath<nnan, ninf>,
-      CConv = #llvm.cconv<fastcc>,
-      TailCallKind = #llvm.tailcallkind<tail>,
-      operandSegmentSizes = array<i32: 1, 0>
-    }> : (i32) -> i32
+    %0 = llvm.call fastcc tail @helper(%arg0) {fastmathFlags = #llvm.fastmath<nnan, ninf>} : (i32) -> i32
     llvm.return %0 : i32
   }
 

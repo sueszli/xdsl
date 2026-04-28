@@ -13,7 +13,7 @@ builtin.module {
 
 // CHECK:       %{{\d+}} = llvm.mlir.addressof @Hello_f_842f9d94ff2eba9703926bef3c2bc5f427db9871 : !llvm.ptr
 
-// CHECK:       "llvm.call"(%{{\d+}}, %{{\d+}}, %{{\d+}}) <{callee = @printf{{.*}}}> : (!llvm.ptr, f64, i32) -> ()
+// CHECK:       llvm.call @printf(%{{\d+}}, %{{\d+}}, %{{\d+}}){{.*}} : (!llvm.ptr, f64, i32) -> ()
 
 // CHECK:       llvm.func @printf(!llvm.ptr, ...)
 
