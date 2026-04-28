@@ -1933,10 +1933,7 @@ class GlobalOp(IRDLOperation):
         unnamed_addr_kw = parser.parse_optional_keyword_in(
             UNNAMED_ADDR_KEYWORDS.values()
         )
-        unnamed_addr_val = next(
-            (v for v, k in UNNAMED_ADDR_KEYWORDS.items() if k == unnamed_addr_kw),
-            None,
-        )
+        unnamed_addr_val = UNNAMED_ADDR_KEY_BY_KEYWORD.get(unnamed_addr_kw)
         constant = parser.parse_optional_keyword("constant") is not None
         sym_name = parser.parse_symbol_name()
         parser.parse_punctuation("(")
