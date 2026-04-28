@@ -39,5 +39,4 @@ jobs:
             mod = f'benchmarks.{p.stem}'
             print(f'Importing {mod}')
             importlib.import_module(mod)
-        print('All benchmark files imported successfully.')
         "
