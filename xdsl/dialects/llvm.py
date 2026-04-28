@@ -1814,9 +1814,11 @@ for the MLIR op, and
 [LLVM LangRef](https://llvm.org/docs/LangRef.html#global-variables) for the
 underlying semantics.
 """
+
 UNNAMED_ADDR_KEY_BY_KEYWORD: dict[str, int] = {
     v: k for k, v in UNNAMED_ADDR_KEYWORD_BY_KEY.items()
 }
+"""Reverse mapping from keyword string to integer key."""
 
 
 @irdl_op_definition
