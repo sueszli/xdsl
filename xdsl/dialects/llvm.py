@@ -2428,7 +2428,7 @@ class CallOp(IRDLOperation):
         op = cls.create(
             operands=all_args,
             properties=props,
-            result_types=list(ft.outputs.data),
+            result_types=ft.outputs.data,
         )
         op.attributes |= attrs
         return op
