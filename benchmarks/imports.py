@@ -7,8 +7,6 @@ already having imported dependencies.
 
 import importlib
 
-import orjson  # noqa: F401
-
 import xdsl
 import xdsl.dialects.affine
 import xdsl.dialects.arith
