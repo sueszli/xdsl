@@ -1802,7 +1802,10 @@ class UndefOp(IRDLOperation):
         super().__init__(result_types=[result_type])
 
 
-UNNAMED_ADDR_KEYWORD_BY_KEY: dict[int, str] = {1: "local_unnamed_addr", 2: "unnamed_addr"}
+UNNAMED_ADDR_KEYWORD_BY_KEY: dict[int, str] = {
+    1: "local_unnamed_addr",
+    2: "unnamed_addr",
+}
 """
 Mapping from LLVM `unnamed_addr` integer values to their textual keyword form
 (0 = no keyword). See external
@@ -1811,6 +1814,9 @@ for the MLIR op, and
 [LLVM LangRef](https://llvm.org/docs/LangRef.html#global-variables) for the
 underlying semantics.
 """
+UNNAMED_ADDR_KEY_BY_KEYWORD: dict[str, int] = {
+    v: k for k, v in UNNAMED_ADDR_KEYWORD_BY_KEY.items()
+}
 
 
 @irdl_op_definition
@@ -1897,7 +1903,7 @@ class GlobalOp(IRDLOperation):
         if self.thread_local_ is not None:
             printer.print_string(" thread_local")
         if self.unnamed_addr is not None and (
-            kw := UNNAMED_ADDR_KEYWORDS.get(self.unnamed_addr.value.data)
+            kw := UNNAMED_ADDR_KEYWORD_BY_KEY.get(self.unnamed_addr.value.data)
         ):
             printer.print_string(f" {kw}")
         if self.constant is not None:
@@ -1931,9 +1937,13 @@ class GlobalOp(IRDLOperation):
         linkage = parser.parse_optional_keyword_in(_LINKAGE_OPTIONS) or "external"
         thread_local_ = parser.parse_optional_keyword("thread_local") is not None
         unnamed_addr_kw = parser.parse_optional_keyword_in(
-            UNNAMED_ADDR_KEYWORDS.values()
+            UNNAMED_ADDR_KEYWORD_BY_KEY.values()
         )
-        unnamed_addr_val = UNNAMED_ADDR_KEY_BY_KEYWORD.get(unnamed_addr_kw)
+        unnamed_addr_val = (
+            UNNAMED_ADDR_KEY_BY_KEYWORD.get(unnamed_addr_kw)
+            if unnamed_addr_kw is not None
+            else None
+        )
         constant = parser.parse_optional_keyword("constant") is not None
         sym_name = parser.parse_symbol_name()
         parser.parse_punctuation("(")
