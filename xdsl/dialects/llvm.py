@@ -1802,7 +1802,7 @@ class UndefOp(IRDLOperation):
         super().__init__(result_types=[result_type])
 
 
-UNNAMED_ADDR_KEYWORDS: dict[int, str] = {1: "local_unnamed_addr", 2: "unnamed_addr"}
+UNNAMED_ADDR_KEYWORD_BY_KEY: dict[int, str] = {1: "local_unnamed_addr", 2: "unnamed_addr"}
 """
 Mapping from LLVM `unnamed_addr` integer values to their textual keyword form
 (0 = no keyword). See external
