@@ -72,3 +72,11 @@ func.func @gep_struct_out_of_range() {
 }
 
 // CHECK: GEP index #1: 5 is out of range for struct with 2 field(s)
+
+// -----
+
+builtin.module {
+  llvm.mlir.global external @no_type_no_value() {addr_space = 0 : i32}
+}
+
+// CHECK: expected `:` followed by global type

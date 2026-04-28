@@ -3,6 +3,7 @@ This file contains the definition of `BaseParser`, a recursive descent parser
 that is inherited from the different parsers used in xDSL.
 """
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import NoReturn
 
@@ -257,6 +258,13 @@ class BaseParser(GenericParser[MLIRTokenKind]):
         ):
             self._consume_token(MLIRTokenKind.BARE_IDENT)
             return keyword
+        return None
+
+    def parse_optional_keyword_in(self, keywords: Iterable[str]) -> str | None:
+        """Parse one of several keywords if present, returning the match."""
+        for kw in keywords:
+            if (result := self.parse_optional_keyword(kw)) is not None:
+                return result
         return None
 
     def parse_keyword(self, keyword: str, context_msg: str = "") -> str:
