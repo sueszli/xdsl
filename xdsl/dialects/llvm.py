@@ -2221,14 +2221,26 @@ class CallIntrinsicOp(IRDLOperation):
 
     name = "llvm.call_intrinsic"
 
-    fastmathFlags = opt_prop_def(FastMathAttr)
+    fastmathFlags = prop_def(FastMathAttr, default_value=FastMathAttr(None))
     intrin = prop_def(StringAttr)
-    op_bundle_sizes = prop_def(DenseArrayBase.constr(i32))
+    op_bundle_sizes = prop_def(
+        DenseArrayBase.constr(i32),
+        default_value=DenseArrayBase.from_list(i32, ()),
+    )
     args = var_operand_def()
     op_bundle_operands = var_operand_def()
     ress = opt_result_def()
 
-    irdl_options = (AttrSizedOperandSegments(as_property=True),)
+    assembly_format = (
+        "$intrin `(` $args `)` (`[` $op_bundle_operands^ `:`"
+        " type($op_bundle_operands) `]`)?"
+        " attr-dict `:` functional-type($args, results)"
+    )
+
+    irdl_options = (
+        AttrSizedOperandSegments(as_property=True),
+        ParsePropInAttrDict(),
+    )
 
     def __init__(
         self,
@@ -2236,7 +2248,7 @@ class CallIntrinsicOp(IRDLOperation):
         args: Sequence[SSAValue],
         result_types: Sequence[Attribute],
         *,
-        op_bundle_sizes: DenseArrayBase,
+        op_bundle_sizes: DenseArrayBase = DenseArrayBase.from_list(i32, ()),
         op_bundle_operands: Sequence[SSAValue] = (),
     ):
         if isinstance(intrin, str):
