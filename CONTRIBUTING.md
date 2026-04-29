@@ -237,6 +237,9 @@ We aim to follow these rules for all changes in this repository:
 - We fail fast by detecting unexpected conditions immediately and raising exceptions
   rather than corrupting state, as this makes debugging easier.
 
+- We use `is not None` to check Optional values, not truthiness (`if x:`). Many xDSL
+  types define `__bool__`, so a bare truthiness check silently skips valid falsy values.
+
 - We follow the Python philosophy of
   "[ask for forgiveness not permission](https://docs.python.org/3/glossary.html#term-EAFP)":
   assume keys and attributes exist and catch exceptions when they don't. For single-value
