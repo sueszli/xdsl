@@ -413,6 +413,54 @@ def _convert_broadcast(
     val_map[op.vector] = builder.shuffle_vector(inserted, undef, mask)
 
 
+def _convert_insert_element(
+    op: llvm.InsertElementOp,
+    builder: ir.IRBuilder,
+    val_map: dict[SSAValue, ir.Value],
+):
+    val_map[op.res] = builder.insert_element(
+        val_map[op.vector],
+        val_map[op.value],
+        val_map[op.index],
+    )
+
+
+def _convert_shuffle_vector(
+    op: llvm.ShuffleVectorOp,
+    builder: ir.IRBuilder,
+    val_map: dict[SSAValue, ir.Value],
+):
+    mask_values = list(op.mask.iter_values())
+    mask = ir.Constant(ir.VectorType(ir.IntType(32), len(mask_values)), mask_values)
+    val_map[op.res] = builder.shuffle_vector(val_map[op.v1], val_map[op.v2], mask)
+
+
+def _convert_call_intrinsic(
+    op: llvm.CallIntrinsicOp,
+    builder: ir.IRBuilder,
+    val_map: dict[SSAValue, ir.Value],
+):
+    if op.op_bundle_operands:
+        raise NotImplementedError("Operand bundles not supported")
+    if op.fastmathFlags is not None and any(op.fastmathFlags.data):
+        raise NotImplementedError("Fast-math flags not supported")
+    args = [val_map[arg] for arg in op.args]
+    arg_types = [a.type for a in args]
+    name = op.intrin.data
+    if op.ress is not None:
+        ret_type = convert_type(op.ress.type)
+    else:
+        ret_type = ir.VoidType()
+    fn_type = ir.FunctionType(ret_type, arg_types)
+    try:
+        intrinsic = builder.module.get_global(name)
+    except KeyError:
+        intrinsic = ir.Function(builder.module, fn_type, name=name)
+    result = builder.call(intrinsic, args)
+    if op.ress is not None:
+        val_map[op.ress] = result
+
+
 _CONSTANT_VALUE_MAP: dict[type[Attribute], Callable[[Attribute], object]] = {
     DenseIntOrFPElementsAttr: lambda v: list(
         cast(DenseIntOrFPElementsAttr, v).iter_values()
@@ -508,8 +556,16 @@ def convert_op(
             _convert_return(op, builder, val_map)
         case llvm.ZeroOp():
             val_map[op.res] = ir.Constant(convert_type(op.res.type), None)
+        case llvm.UndefOp():
+            val_map[op.res] = ir.Constant(convert_type(op.res.type), ir.Undefined)
         case llvm.AddressOfOp():
             _convert_addressof(op, builder, val_map)
+        case llvm.InsertElementOp():
+            _convert_insert_element(op, builder, val_map)
+        case llvm.ShuffleVectorOp():
+            _convert_shuffle_vector(op, builder, val_map)
+        case llvm.CallIntrinsicOp():
+            _convert_call_intrinsic(op, builder, val_map)
         case FMAOp():
             _convert_fma(op, builder, val_map)
         case vector.BroadcastOp():

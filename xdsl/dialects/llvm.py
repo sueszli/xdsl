@@ -1711,6 +1711,62 @@ class UndefOp(IRDLOperation):
         super().__init__(result_types=[result_type])
 
 
+@irdl_op_definition
+class InsertElementOp(IRDLOperation):
+    """
+    See external [documentation](https://mlir.llvm.org/docs/Dialects/LLVM/#llvminsertelement-llvminsertelementop).
+    """
+
+    name = "llvm.insertelement"
+
+    vector = operand_def(VectorType)
+    value = operand_def(Attribute)
+    index = operand_def(SignlessIntegerConstraint)
+    res = result_def(VectorType)
+
+    traits = traits_def(NoMemoryEffect())
+
+    def __init__(
+        self,
+        vector: Operation | SSAValue,
+        value: Operation | SSAValue,
+        index: Operation | SSAValue,
+    ):
+        super().__init__(
+            operands=[vector, value, index],
+            result_types=[SSAValue.get(vector).type],
+        )
+
+
+@irdl_op_definition
+class ShuffleVectorOp(IRDLOperation):
+    """
+    See external [documentation](https://mlir.llvm.org/docs/Dialects/LLVM/#llvmshufflevector-llvmshufflevectorop).
+    """
+
+    name = "llvm.shufflevector"
+
+    v1 = operand_def(VectorType)
+    v2 = operand_def(VectorType)
+    mask = prop_def(DenseArrayBase.constr(i32))
+    res = result_def(VectorType)
+
+    traits = traits_def(NoMemoryEffect())
+
+    def __init__(
+        self,
+        v1: Operation | SSAValue,
+        v2: Operation | SSAValue,
+        mask: DenseArrayBase,
+        result_type: Attribute,
+    ):
+        super().__init__(
+            operands=[v1, v2],
+            result_types=[result_type],
+            properties={"mask": mask},
+        )
+
+
 # TODO: custom assembly format https://github.com/xdslproject/xdsl/issues/5897
 @irdl_op_definition
 class GlobalOp(IRDLOperation):
@@ -2184,7 +2240,7 @@ class ConstantOp(IRDLOperation):
         if b is not None:
             return IntegerAttr.from_bool(b)
         attr = parser.parse_optional_attribute()
-        if attr:
+        if attr is not None:
             return attr
         return IntegerAttr(parser.parse_integer(), 64)
 
@@ -2993,6 +3049,7 @@ LLVM = Dialect(
         GlobalOp,
         ICmpOp,
         InlineAsmOp,
+        InsertElementOp,
         InsertValueOp,
         IntToPtrOp,
         LShrOp,
@@ -3008,6 +3065,7 @@ LLVM = Dialect(
         SIToFPOp,
         SRemOp,
         ShlOp,
+        ShuffleVectorOp,
         StoreOp,
         SubOp,
         TruncOp,
