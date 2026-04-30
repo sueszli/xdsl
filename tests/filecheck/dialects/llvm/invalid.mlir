@@ -134,3 +134,13 @@ func.func @insertvalue_into_scalar() {
 }
 
 // CHECK: cannot index into i32
+
+// -----
+
+func.func @insertelement_2d_vector() {
+  %vec, %val, %idx = "test.op"() : () -> (vector<4x4xf32>, f32, i32)
+  %r = "llvm.insertelement"(%vec, %val, %idx) : (vector<4x4xf32>, f32, i32) -> vector<4x4xf32>
+  func.return
+}
+
+// CHECK: Expected 1-D vector type, got 2-D.
