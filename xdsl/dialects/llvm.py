@@ -1715,6 +1715,13 @@ class InsertElementOp(IRDLOperation):
 
     traits = traits_def(NoMemoryEffect())
 
+    def verify_(self):
+        assert isa(self.vector.type, VectorType[Attribute])
+        if self.vector.type.get_num_dims() != 1:
+            raise VerifyException(
+                f"Expected 1-D vector type, got {self.vector.type.get_num_dims()}-D."
+            )
+
     def __init__(
         self,
         vector: Operation | SSAValue,
