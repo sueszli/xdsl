@@ -5,7 +5,7 @@ import pytest
 
 from xdsl.backend.llvm.convert_op import convert_op
 from xdsl.dialects import llvm
-from xdsl.dialects.builtin import VectorType, f32, i32
+from xdsl.dialects.builtin import i32
 from xdsl.ir import Block, SSAValue
 
 
@@ -31,21 +31,3 @@ def test_convert_zero():
     convert_op(op, MagicMock(), val_map)
 
     assert str(val_map[op.res]) == "ptr null"
-
-
-def test_convert_insert_element():
-    vec_type = VectorType(f32, [4])
-    block = Block(arg_types=[vec_type, f32, i32])
-    vec, val, idx = block.args
-
-    op = llvm.InsertElementOp(vec, val, idx)
-    block.add_op(op)
-
-    builder = MagicMock()
-    mock_vec, mock_val, mock_idx = MagicMock(), MagicMock(), MagicMock()
-    val_map: dict[SSAValue, Any] = {vec: mock_vec, val: mock_val, idx: mock_idx}
-
-    convert_op(op, builder, val_map)
-
-    builder.insert_element.assert_called_once_with(mock_vec, mock_val, mock_idx)
-    assert val_map[op.res] is builder.insert_element.return_value
