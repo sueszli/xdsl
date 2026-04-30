@@ -1701,13 +1701,13 @@ class InsertElementOp(IRDLOperation):
 
     name = "llvm.insertelement"
 
-    E: ClassVar = VarConstraint("E", AnyAttr())
-    T: ClassVar = VarConstraint("T", VectorType.constr(E))
+    ELEMENT: ClassVar = VarConstraint("ELEMENT", AnyAttr())
+    VECTOR_T: ClassVar = VarConstraint("VECTOR_T", VectorType.constr(ELEMENT))
 
-    vector = operand_def(T)
-    value = operand_def(E)
+    vector = operand_def(VECTOR_T)
+    value = operand_def(ELEMENT)
     index = operand_def(SignlessIntegerConstraint)
-    res = result_def(T)
+    res = result_def(VECTOR_T)
 
     assembly_format = (
         "$value `,` $vector `[` $index `:` type($index) `]` attr-dict `:` type($vector)"
