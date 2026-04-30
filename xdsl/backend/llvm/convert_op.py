@@ -510,6 +510,12 @@ def convert_op(
             val_map[op.res] = ir.Constant(convert_type(op.res.type), None)
         case llvm.AddressOfOp():
             _convert_addressof(op, builder, val_map)
+        case llvm.InsertElementOp():
+            val_map[op.res] = builder.insert_element(
+                val_map[op.vector],
+                val_map[op.value],
+                val_map[op.index],
+            )
         case FMAOp():
             _convert_fma(op, builder, val_map)
         case vector.BroadcastOp():
