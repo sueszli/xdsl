@@ -1694,6 +1694,40 @@ class InsertValueOp(IRDLOperation):
 
 
 @irdl_op_definition
+class InsertElementOp(IRDLOperation):
+    """
+    See external [documentation](https://mlir.llvm.org/docs/Dialects/LLVM/#llvminsertelement-llvminsertelementop).
+    """
+
+    name = "llvm.insertelement"
+
+    E: ClassVar = VarConstraint("E", AnyAttr())
+    T: ClassVar = VarConstraint("T", VectorType.constr(E))
+
+    vector = operand_def(T)
+    value = operand_def(E)
+    index = operand_def(SignlessIntegerConstraint)
+    res = result_def(T)
+
+    assembly_format = (
+        "$value `,` $vector `[` $index `:` type($index) `]` attr-dict `:` type($vector)"
+    )
+
+    traits = traits_def(NoMemoryEffect())
+
+    def __init__(
+        self,
+        vector: Operation | SSAValue,
+        value: Operation | SSAValue,
+        index: Operation | SSAValue,
+    ):
+        super().__init__(
+            operands=[vector, value, index],
+            result_types=[SSAValue.get(vector).type],
+        )
+
+
+@irdl_op_definition
 class UndefOp(IRDLOperation):
     """
     See external [documentation](https://mlir.llvm.org/docs/Dialects/LLVM/#llvmmlirundef-mlirllvmundefop).
@@ -2993,6 +3027,7 @@ LLVM = Dialect(
         GlobalOp,
         ICmpOp,
         InlineAsmOp,
+        InsertElementOp,
         InsertValueOp,
         IntToPtrOp,
         LShrOp,

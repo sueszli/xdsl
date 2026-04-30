@@ -669,3 +669,15 @@ def test_masked_store_op():
     assert op.data == ptr
     assert op.mask == mask
     assert op.alignment.value.data == 16
+
+
+def test_insert_element_op():
+    vec_type = builtin.VectorType(builtin.f32, [4])
+    vec = create_ssa_value(vec_type)
+    val = create_ssa_value(builtin.f32)
+    idx = create_ssa_value(builtin.i32)
+    op = llvm.InsertElementOp(vec, val, idx)
+    assert op.vector == vec
+    assert op.value == val
+    assert op.index == idx
+    assert op.res.type == vec_type
