@@ -134,3 +134,14 @@ func.func @insertvalue_into_scalar() {
 }
 
 // CHECK: cannot index into i32
+
+// -----
+
+func.func @insertelement_2d_vector() {
+  %vec, %val, %idx = "test.op"() : () -> (vector<4x4xf32>, f32, i32)
+  %r = llvm.insertelement %val, %vec[%idx : i32] : vector<4x4xf32>
+  func.return
+}
+
+// CHECK: incorrect length for range variable:
+// CHECK-NEXT: Invalid value 2, expected 1
