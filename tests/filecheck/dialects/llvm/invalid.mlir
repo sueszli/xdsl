@@ -174,3 +174,12 @@ func.func @shufflevector_mask_out_of_range() {
 }
 
 // CHECK: Mask value 5 out of range [-1, 4)
+
+// -----
+
+func.func @call_intrinsic_bad_name() {
+  llvm.call_intrinsic "not_an_intrinsic"() : () -> ()
+  func.return
+}
+
+// CHECK: intrinsic name must start with 'llvm.'
